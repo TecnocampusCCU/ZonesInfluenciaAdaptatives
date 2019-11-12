@@ -721,7 +721,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1+="CREATE local temp TABLE \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
         sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"the_geom\"), \"reverse_cost\"=st_length(\"the_geom\");\n"
-        print (sql_1)
+        #print (sql_1)
         try:
             cur.execute(sql_1)
             conn.commit()
