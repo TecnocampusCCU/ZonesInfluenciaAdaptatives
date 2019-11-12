@@ -11,7 +11,7 @@
         copyright            : (C) 2018 by Josep Lopez
         email                : jlopez@tecnocampus.cat
  ***************************************************************************/
-
+Heyyyyyy
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.191107"
+Versio_modul="V_Q3.191111"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -718,11 +718,10 @@ class ZonesInfluenciaAdaptatives:
         XarxaCarrers = self.dlg.comboGraf.currentText()
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
         """ Es fa una copia de la taula que conté el graf i s'afegeixen els camps cost i reverse_cost en funció del que es necessiti, es crearà  taula local temporal per evitar problemes de concurrencia"""
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS \"Xarxa_Graf\" as (SELECT * FROM \"" + XarxaCarrers + "\");\n"
-        
+        sql_1+="CREATE local temp TABLE IF NOT EXISTS \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
         sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"the_geom\"), \"reverse_cost\"=st_length(\"the_geom\");\n"
-        #print sql_1
+        print (sql_1)
         try:
             cur.execute(sql_1)
             conn.commit()
