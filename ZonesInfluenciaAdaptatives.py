@@ -11,7 +11,7 @@
         copyright            : (C) 2018 by Josep Lopez
         email                : jlopez@tecnocampus.cat
  ***************************************************************************/
-Heyyyyyy
+
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.191111"
+Versio_modul="V_Q3.191112"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -718,7 +718,7 @@ class ZonesInfluenciaAdaptatives:
         XarxaCarrers = self.dlg.comboGraf.currentText()
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
         """ Es fa una copia de la taula que conté el graf i s'afegeixen els camps cost i reverse_cost en funció del que es necessiti, es crearà  taula local temporal per evitar problemes de concurrencia"""
-        sql_1+="CREATE local temp TABLE IF NOT EXISTS \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
+        sql_1+="CREATE local temp TABLE \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
         sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"the_geom\"), \"reverse_cost\"=st_length(\"the_geom\");\n"
         print (sql_1)
@@ -754,7 +754,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1="drop table if exists punts_interes_tmp;\n"
         
         """Es crea la taula 'punts_interes_tmp' seleccionant el centroide de la entitat seleccionada utilitzant com a radi el valor del camp seleccionat"""
-        sql_1+="CREATE local temporary TABLE if not exists punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") the_geom,tmp.\"id\"as pid,tmp.\""+camp_radi+"\" from ("+sql_buff+") tmp);\n"
+        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") the_geom,tmp.\"id\"as pid,tmp.\""+camp_radi+"\" from ("+sql_buff+") tmp);\n"
         
             
         #sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN pid BIGSERIAL PRIMARY KEY;\n"
@@ -853,7 +853,7 @@ class ZonesInfluenciaAdaptatives:
         
         Radi_Variable = cur.fetchall()
         """CreaciÃ³ de la taula 'tbl_punts_finsl_tmp' on es tindrÃ  tots els nodes de la xarxa que son a dins del radi d'acciÃ³ indicat fent UNION per cada entitat amb el seu radi personalitzat segons el valor del camp escollit"""
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS tbl_punts_finals_tmp AS("
+        sql_1+="CREATE local temporary TABLE tbl_punts_finals_tmp AS("
         for x in range (0,len(Radi_Variable)):
             if (x!=0):
                 sql_1+=" UNION "
@@ -892,7 +892,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1="DROP table if exists geo_punts_finals_tmp;\n"
 
         """CreaciÃ³ de la taula 'geo_punts_finals_tmp' on estan tots els nodes de la xarxa que son a dins del radi variable segons el camp escolit amb la geometria inclosa"""
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS geo_punts_finals_tmp as (select \"" + XarxaCarrers + "_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\", \"tbl_punts_finals_tmp\".\"init_radi\" from \"" + XarxaCarrers + "_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"" + XarxaCarrers + "_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\" order by \"tbl_punts_finals_tmp\".\"start_vid\" desc,\"tbl_punts_finals_tmp\".\"agg_cost\");\n"
+        sql_1+="CREATE local temporary TABLE geo_punts_finals_tmp as (select \"" + XarxaCarrers + "_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\", \"tbl_punts_finals_tmp\".\"init_radi\" from \"" + XarxaCarrers + "_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"" + XarxaCarrers + "_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\" order by \"tbl_punts_finals_tmp\".\"start_vid\" desc,\"tbl_punts_finals_tmp\".\"agg_cost\");\n"
        
         #print sql_1
         try:
@@ -937,7 +937,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI DE LA CREACIO DE LA TAULA 'TRAMS_FINALS_TMP' QUE CONTINDRA ELS TRAMS QUE FORMEN PART DEL RADI D'ACCIO INDICAT 
 #       *****************************************************************************************************************
         sql_1="DROP table IF EXISTS trams_finals_tmp;\n"
-        sql_1+="CREATE local temporary TABLE IF NOT EXISTS trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,(\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")<=1 then (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\") when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+        sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,(\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")<=1 then (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\") when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -1365,7 +1365,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         """ Es fa la uniÃ³ de tots els trams des del servidor POSTGRES dins de la taula Graf_utilitzat_(data)"""
         sql_1="drop table if exists \"graf_utilitzat_"+Fitxer+"\";\n"
-        sql_1+="create table IF NOT EXISTS \"graf_utilitzat_"+Fitxer+"\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
+        sql_1+="create table \"graf_utilitzat_"+Fitxer+"\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1395,7 +1395,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
         sql_1+="drop table if exists \"buffer_final\";\n"
-        sql_1+="create local temp table IF NOT EXISTS \"buffer_final\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (Select ST_Buffer(the_geom,"+self.dlg.txt_radi.text()+") the_geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
+        sql_1+="create local temp table \"buffer_final\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (Select ST_Buffer(the_geom,"+self.dlg.txt_radi.text()+") the_geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
             
         try:
             cur.execute(sql_1)
