@@ -557,7 +557,7 @@ class ZonesInfluenciaAdaptatives:
                     if (self.puntsValid(capa)):
                         pass
                     else:
-                        QMessageBox.information(None, "Error", 'La capa de punts seleccionada no Ã©s vàlida ja que no tÃ© o li falta algun dels camps segÃ¼ents:\n-"NPlaces"\n-"RadiInicial"\n-"id"\n')
+                        QMessageBox.information(None, "Error", 'La capa de punts seleccionada no és vàlida ja que no té o li falta algun dels camps següents:\n-"NPlaces"\n-"RadiInicial"\n-"id"\n')
         except Exception as ex:
             print ("Error Change_ComboPunts")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -611,7 +611,7 @@ class ZonesInfluenciaAdaptatives:
         return errors
     
     def puntsValid(self, taula):
-        '''Aquesta funcio comprova si la taula de la capa de punts tÃ© els camps necessaris per fer els càlculs'''
+        '''Aquesta funcio comprova si la taula de la capa de punts té els camps necessaris per fer els càlculs'''
         global cur
         global conn
         campNPlaces = False
@@ -629,7 +629,7 @@ class ZonesInfluenciaAdaptatives:
         return campNPlaces[0][0] and campRadiInicial[0][0] and campID[0][0]
     
     def grafValid(self, taula):
-        """Aquesta funció comprova si la taula que li hem passat tÃ© la seva capa de graf corresponent"""
+        """Aquesta funció comprova si la taula que li hem passat té la seva capa de graf corresponent"""
         global cur
         global conn
         sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
@@ -836,7 +836,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI ASSIGNACIO DEL VALOR DEL TRAM MES PROPER AL CAMP 'EDGE_ID' DE LA TAULA 'PUNTS_INTERES_TMP I LA PROJECCIO DEL PUNT D'INTERES SOBRE EL TRAM
 #       *****************************************************************************************************************
-        """S'assigna el valor del tram mÃ©s proper al punt d'interes en el camp 'edge_id' de la taula 'punts_interes_tmp'"""
+        """S'assigna el valor del tram més proper al punt d'interes en el camp 'edge_id' de la taula 'punts_interes_tmp'"""
         sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.the_geom,Poi.the_geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.the_geom,Poi.the_geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
         """Es calcula la fraccio del tram que on esta situat la projecció del punt d'interes"""
         sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom),newPoint = ST_LineInterpolatePoint(e.the_geom, ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
@@ -1770,7 +1770,7 @@ class ZonesInfluenciaAdaptatives:
         a=time.time()
         while (not trobat):
             path = QFileDialog.getExistingDirectory(self.dlg,
-                "Busca la carpeta que contÃ© els arxius provinents del mÃ²dul TAULA RESUM",  Path_Inicial+"\\",
+                "Busca la carpeta que conté els arxius provinents del módul TAULA RESUM",  Path_Inicial+"\\",
                 QFileDialog.ShowDirsOnly)
             if (path != ''):
                 if (self.arxiusExisteixen(path)):                
