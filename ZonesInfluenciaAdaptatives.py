@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.191112"
+Versio_modul="V_Q3.191120"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -320,7 +320,7 @@ class ZonesInfluenciaAdaptatives:
 
 
     def on_click_ColorArea(self):
-        """Aquesta funciÃ³ obra un dialeg per poder triar el color de l'area que volem pintar. """
+        """Aquesta funció obra un dialeg per poder triar el color de l'area que volem pintar. """
         global micolorArea
         aux = QColorDialog.getColor()
         if aux.isValid():
@@ -333,7 +333,7 @@ class ZonesInfluenciaAdaptatives:
         pass
     
     def on_click_Color(self):
-        """Aquesta funciÃ³ obra un dialeg per poder triar el color del contorn de l'area que volem pintar. """
+        """Aquesta funció obra un dialeg per poder triar el color del contorn de l'area que volem pintar. """
         global micolor
         aux = QColorDialog.getColor()
         if aux.isValid():
@@ -373,7 +373,7 @@ class ZonesInfluenciaAdaptatives:
             self.dlg.chk_calc_local.setEnabled(True)
     
     def EstatInicial(self):
-        """Aquesta funciÃ³ posa tots els elements de la interficie en el seu estat inicial."""
+        """Aquesta funció posa tots els elements de la interficie en el seu estat inicial."""
         global Versio_modul
         global micolor
         global micolorArea
@@ -412,7 +412,7 @@ class ZonesInfluenciaAdaptatives:
         QApplication.processEvents()
     
     def on_click_MarcarIlles(self, clicked):
-        """Aquesta funciÃ³ controla l'aparenÃ§a del botÃ³ Illes """
+        """Aquesta funció controla l'aparença del botó Illes """
         if clicked:
             self.dlg.bt_ILLES.setStyleSheet('background-color: #7fff7f')
             self.dlg.bt_Parcel.setChecked(False)
@@ -424,7 +424,7 @@ class ZonesInfluenciaAdaptatives:
             self.dlg.bt_ILLES.setStyleSheet('background-color: rgb(227, 227, 227)')
             
     def on_click_MarcarParcel(self, clicked):
-        """Aquesta funciÃ³ controla l'aparenÃ§a del botÃ³ Parceles """
+        """Aquesta funció controla l'aparença del botó Parceles """
         if clicked:
             self.dlg.bt_Parcel.setStyleSheet('background-color: #7fff7f')
             self.dlg.bt_ILLES.setChecked(False)
@@ -436,7 +436,7 @@ class ZonesInfluenciaAdaptatives:
             self.dlg.bt_Parcel.setStyleSheet('background-color: rgb(227, 227, 227)')
             
     def on_click_MarcarPortals(self, clicked):
-        """Aquesta funciÃ³ controla l'aparenÃ§a del botÃ³ Portals """
+        """Aquesta funció controla l'aparença del botó Portals """
         if clicked:
             self.dlg.bt_Portals.setStyleSheet('background-color: #7fff7f')
             self.dlg.bt_Parcel.setChecked(False)
@@ -452,8 +452,8 @@ class ZonesInfluenciaAdaptatives:
         """
         En el moment en que es modifica la opcio escollida 
         del combo o desplegable de les connexions,
-        automÃ ticament comprova si es pot establir
-        connexiÃ³ amb la bbdd seleccionada.
+        automàticament comprova si es pot establir
+        connexió amb la bbdd seleccionada.
         """
         global nomBD1
         global contra1
@@ -466,7 +466,7 @@ class ZonesInfluenciaAdaptatives:
         s = QSettings()
         self.dlg.combo_punts.clear()
         self.dlg.comboGraf.clear()
-        select = 'Selecciona connexiÃ³'
+        select = 'Selecciona connexió'
         nom_conn=self.dlg.comboConnexio.currentText()
         if nom_conn != select:
             s.beginGroup("PostgreSQL/connections/"+nom_conn)
@@ -502,12 +502,20 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(sql2)
                 llista2 = cur.fetchall()
                 self.ompleCombos(self.dlg.comboGraf, llista2, 'Selecciona una entitat', True)
-                self.dlg.Esborra_temp.setVisible(True)
-            except:
+                self.dlg.Esborra_temp.setVisible(True) 
+            except Exception as ex:
+                print ("Error a la connexio")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                self.barraEstat_Error()
+                QMessageBox.information(None, "Error", "Error a la connexio")
                 self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #ff7f7f')
                 self.dlg.lblEstatConn.setText('Error: Hi ha algun camp erroni.')
                 print ("I am unable to connect to the database")
                 self.dlg.Esborra_temp.setVisible(False)
+    
+                return
 
             #self.DropTemporalTables()
         else:
@@ -517,33 +525,51 @@ class ZonesInfluenciaAdaptatives:
         """
         En el moment en que es modifica la opcio escollida 
         del combo o desplegable de la capa de punts,
-        automÃ ticament comprova els camps de la taula escollida.
+        automàticament comprova els camps de la taula escollida.
         """
-        capa=self.dlg.comboGraf.currentText()
-        if capa != "":
-            if capa != 'Selecciona una entitat':
-                if (self.grafValid(capa)):
-                    pass
-                else:
-                    QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
+        try:
+            capa=self.dlg.comboGraf.currentText()
+            if capa != "":
+                if capa != 'Selecciona una entitat':
+                    if (self.grafValid(capa)):
+                        pass
+                    else:
+                        QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
+        except Exception as ex:
+            print ("Error Change_ComboGraf")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            self.barraEstat_Error()
+            QMessageBox.information(None, "Error", "Error Change_ComboGraf")
+            return
     
     def on_Change_ComboPunts(self, state):
         """
         En el moment en que es modifica la opcio escollida 
         del combo o desplegable de la capa de punts,
-        automÃ ticament comprova els camps de la taula escollida.
+        automàticament comprova els camps de la taula escollida.
         """
-        capa=self.dlg.combo_punts.currentText()
-        if capa != "":
-            if capa != 'Selecciona una entitat':
-                if (self.puntsValid(capa)):
-                    pass
-                else:
-                    QMessageBox.information(None, "Error", 'La capa de punts seleccionada no Ã©s vÃ lida ja que no tÃ© o li falta algun dels camps segÃ¼ents:\n-"NPlaces"\n-"RadiInicial"\n-"id"\n')
+        try:
+            capa=self.dlg.combo_punts.currentText()
+            if capa != "":
+                if capa != 'Selecciona una entitat':
+                    if (self.puntsValid(capa)):
+                        pass
+                    else:
+                        QMessageBox.information(None, "Error", 'La capa de punts seleccionada no Ã©s vàlida ja que no tÃ© o li falta algun dels camps segÃ¼ents:\n-"NPlaces"\n-"RadiInicial"\n-"id"\n')
+        except Exception as ex:
+            print ("Error Change_ComboPunts")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            self.barraEstat_Error()
+            QMessageBox.information(None, "Error", "Change_ComboPunts")
+            return
     
     
     def controlErrors(self):
-        """Aquesta funciÃ³ controla que tots els camps siguin correctes abans de fer el cÃ lcul"""
+        """Aquesta funció controla que tots els camps siguin correctes abans de fer el càlcul"""
         errors = []
         if self.dlg.comboConnexio.currentText() == 'Selecciona connexió':
             errors.append('No hi ha seleccionada cap connexió')
@@ -585,7 +611,7 @@ class ZonesInfluenciaAdaptatives:
         return errors
     
     def puntsValid(self, taula):
-        '''Aquesta funcio comprova si la taula de la capa de punts tÃ© els camps necessaris per fer els cÃ lculs'''
+        '''Aquesta funcio comprova si la taula de la capa de punts tÃ© els camps necessaris per fer els càlculs'''
         global cur
         global conn
         campNPlaces = False
@@ -603,7 +629,7 @@ class ZonesInfluenciaAdaptatives:
         return campNPlaces[0][0] and campRadiInicial[0][0] and campID[0][0]
     
     def grafValid(self, taula):
-        """Aquesta funciÃ³ comprova si la taula que li hem passat tÃ© la seva capa de graf corresponent"""
+        """Aquesta funció comprova si la taula que li hem passat tÃ© la seva capa de graf corresponent"""
         global cur
         global conn
         sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
@@ -645,7 +671,7 @@ class ZonesInfluenciaAdaptatives:
         combo.blockSignals (False)
     
     def ompleCombos(self, combo, llista, predef, sort):
-        """Aquesta funciÃ³ omple els combos que li passem per parÃ metres"""
+        """Aquesta funció omple els combos que li passem per paràmetres"""
         combo.blockSignals (True)
         combo.clear()
         model=QStandardItemModel(combo)
@@ -691,7 +717,7 @@ class ZonesInfluenciaAdaptatives:
         conn.commit()
         
     def campGeometria(self, taula):
-        """Aquesta funciÃ³ retorna el camp de geometria de la taula que li passem per parametres"""
+        """Aquesta funció retorna el camp de geometria de la taula que li passem per parametres"""
 
         global cur
         global conn
@@ -750,7 +776,24 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LA TAULA 'PUNTS_INTERES_TMP' QUE CONTINDRA ELS PUNTS D'INTERES PROJECTATS SOBRE EL TRAM
 #       *****************************************************************************************************************
-        geometria=self.campGeometria(self.dlg.combo_punts.currentText())
+        try:
+            geometria=self.campGeometria(self.dlg.combo_punts.currentText())
+        except Exception as ex:
+            missatge="Error campGeometria "
+            print (missatge)
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", missatge)
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return "ERROR"
+        
         sql_1="drop table if exists punts_interes_tmp;\n"
         
         """Es crea la taula 'punts_interes_tmp' seleccionant el centroide de la entitat seleccionada utilitzant com a radi el valor del camp seleccionat"""
@@ -795,7 +838,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         """S'assigna el valor del tram mÃ©s proper al punt d'interes en el camp 'edge_id' de la taula 'punts_interes_tmp'"""
         sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.the_geom,Poi.the_geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.the_geom,Poi.the_geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
-        """Es calcula la fraccio del tram que on esta situat la projecciÃ³ del punt d'interes"""
+        """Es calcula la fraccio del tram que on esta situat la projecció del punt d'interes"""
         sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom),newPoint = ST_LineInterpolatePoint(e.the_geom, ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
         #print sql_1
         try:
@@ -852,7 +895,7 @@ class ZonesInfluenciaAdaptatives:
             return "ERROR"
         
         Radi_Variable = cur.fetchall()
-        """CreaciÃ³ de la taula 'tbl_punts_finsl_tmp' on es tindrÃ  tots els nodes de la xarxa que son a dins del radi d'acciÃ³ indicat fent UNION per cada entitat amb el seu radi personalitzat segons el valor del camp escollit"""
+        """Creació de la taula 'tbl_punts_finsl_tmp' on es tindrà tots els nodes de la xarxa que son a dins del radi d'acció indicat fent UNION per cada entitat amb el seu radi personalitzat segons el valor del camp escollit"""
         sql_1+="CREATE local temporary TABLE tbl_punts_finals_tmp AS("
         for x in range (0,len(Radi_Variable)):
             if (x!=0):
@@ -891,7 +934,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         sql_1="DROP table if exists geo_punts_finals_tmp;\n"
 
-        """CreaciÃ³ de la taula 'geo_punts_finals_tmp' on estan tots els nodes de la xarxa que son a dins del radi variable segons el camp escolit amb la geometria inclosa"""
+        """Creació de la taula 'geo_punts_finals_tmp' on estan tots els nodes de la xarxa que son a dins del radi variable segons el camp escolit amb la geometria inclosa"""
         sql_1+="CREATE local temporary TABLE geo_punts_finals_tmp as (select \"" + XarxaCarrers + "_vertices_pgr\".*,\"tbl_punts_finals_tmp\".\"agg_cost\", \"tbl_punts_finals_tmp\".\"start_vid\", \"tbl_punts_finals_tmp\".\"init_radi\" from \"" + XarxaCarrers + "_vertices_pgr\",\"tbl_punts_finals_tmp\" where \"" + XarxaCarrers + "_vertices_pgr\".\"id\" =\"tbl_punts_finals_tmp\".\"node\" order by \"tbl_punts_finals_tmp\".\"start_vid\" desc,\"tbl_punts_finals_tmp\".\"agg_cost\");\n"
        
         #print sql_1
@@ -1055,7 +1098,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI ACTUALITZACIO DE LA FRACCIO DELS TRAMS INICIALS 
 #       *****************************************************************************************************************
-        """ActualitzaciÃ³ de la fracciÃ³ dels trams inicials  """
+        """Actualització de la fracció dels trams inicials  """
         sql_1="update \"fraccio_trams_raw\" set \"fraccio_inicial\"=\"punts_interes_tmp\".\"fraction\" from \"punts_interes_tmp\" where \"id_tram\"=\"edge_id\""
         try:
             cur.execute(sql_1)
@@ -1085,7 +1128,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI ACTUALITZACIO DELS VALORS DE COST DIRECTE, TARGET, COST INVERS DELS TRAMS INICIALS 
 #       *****************************************************************************************************************
-        """ActualitzaciÃ³ dels valors de cost directe, target, cost invers dels trams inicials"""
+        """Actualització dels valors de cost directe, target, cost invers dels trams inicials"""
         sql_1="update \"fraccio_trams_raw\" set \"cost_directe\"=\"Xarxa_Graf\".\"cost\",\"target\"=\"Xarxa_Graf\".\"target\",\"cost_invers\"=\"Xarxa_Graf\".\"reverse_cost\" from \"Xarxa_Graf\" where \"id_tram\"=\"id\""
         try:
             cur.execute(sql_1)
@@ -1332,7 +1375,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         sql_1="DROP TABLE IF EXISTS fraccio_trams_tmp;\n"
 
-        """EliminaciÃ³ de trams duplicats"""
+        """Eliminació de trams duplicats"""
         sql_1+="CREATE local temporary TABLE fraccio_trams_tmp AS (select distinct(the_geom),punt_id,radi_inic from fraccio_trams_raw);\n"
         
         try:
@@ -1363,7 +1406,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI CREACIO TAULA GRAF_UTILITZAT_(DATA) QUE CONTINDRA ELS TRAMS UNITS DEL GRAF 
 #       *****************************************************************************************************************
-        """ Es fa la uniÃ³ de tots els trams des del servidor POSTGRES dins de la taula Graf_utilitzat_(data)"""
+        """ Es fa la unió de tots els trams des del servidor POSTGRES dins de la taula Graf_utilitzat_(data)"""
         sql_1="drop table if exists \"graf_utilitzat_"+Fitxer+"\";\n"
         sql_1+="create table \"graf_utilitzat_"+Fitxer+"\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
         try:
@@ -1659,7 +1702,7 @@ class ZonesInfluenciaAdaptatives:
     
     
     def arxiusExisteixen(self, path):
-        '''Aquesta funcio s'encarrega de comprovar que els arxius necessaris per a cada execuciÃ³ estiguin a la carpeta seleccio'''
+        '''Aquesta funcio s'encarrega de comprovar que els arxius necessaris per a cada execució estiguin a la carpeta seleccio'''
         if self.dlg.bt_ILLES.isChecked():
             if (os.path.exists(path + "\\tr_illes.csv")):
                 return True
@@ -1670,19 +1713,19 @@ class ZonesInfluenciaAdaptatives:
             if (os.path.exists(path + "\\tr_parceles.csv") and os.path.exists(path + "\\tr_illes.csv")):
                 return True
             else:
-                QMessageBox.information(None, "ERROR 1: LECTURA DE LES PARCELÂ·LES", "No s'han trobat els arxius de illes ni parcelÂ·les.")
+                QMessageBox.information(None, "ERROR 1: LECTURA DE LES PARCEL·LES", "No s'han trobat els arxius de illes ni parcel·les.")
                 return False
         else:
             if (os.path.exists(path + "\\tr_npolicia.csv") and os.path.exists(path + "\\tr_illes.csv")):
                 return True
             else:
-                QMessageBox.information(None, "ERROR 2: LECTURA DELS NÃšMEROS DE POLICIA", "No s'han trobat els arxius de illes ni nÃºmeros de policia.")
+                QMessageBox.information(None, "ERROR 2: LECTURA DELS NÚMEROS DE POLICIA", "No s'han trobat els arxius de illes ni nÃºmeros de policia.")
                 return False
 
 
     
     def on_click_Inici(self):
-        """Aquesta funcio genera tots els calculs amb tots el parametres que li hem introduit
+        """Aquesta funció genera tots els calculs amb tots el parametres que li hem introduit
         a la finestra a traves dels elements de la interficie."""
         global micolor
         global micolorArea
@@ -1739,7 +1782,7 @@ class ZonesInfluenciaAdaptatives:
                         drop="DROP TABLE IF EXISTS \"Illes_Resum\";\n"
                         cur.execute(drop)
                         conn.commit()
-                        """CreaciÃ³ de la taula temporal Illes_resum_(data) de les dades del CSV de la taula resum d'illes"""
+                        """Creació de la taula temporal Illes_resum_(data) de les dades del CSV de la taula resum d'illes"""
                         cur.execute("CREATE local temp TABLE \"Illes_Resum\" (\"ILLES_Codificades\" varchar(20), \"Habitants\" numeric);")
                         conn.commit()
                         insert=""
@@ -1773,7 +1816,7 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(drop)
                             conn.commit()
                             self.barraEstat_llegint()
-                            """CreaciÃ³ de la taula temporal Resum_Temp_(data) de les dades del CSV de la taula resum de parceles"""
+                            """Creació de la taula temporal Resum_Temp_(data) de les dades del CSV de la taula resum de parceles"""
                             cur.execute("CREATE local temp TABLE \"Parcel_Resum\" (\"Parcela\" varchar(20), \"Habitants\" numeric);")
                             conn.commit()
                             insert=""
@@ -1809,7 +1852,7 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(drop)
                             conn.commit()
                             self.barraEstat_llegint()
-                            """CreaciÃ³ de la taula temporal Resum_Temp_(data) de les dades del CSV de la taula resum de portals"""
+                            """Creació de la taula temporal Resum_Temp_(data) de les dades del CSV de la taula resum de portals"""
                             cur.execute("CREATE local temp TABLE \"NPolicia_Resum\" (\"NPolicia\" varchar(20), \"Habitants\" numeric);")
                             conn.commit()
                             insert=""
@@ -1833,7 +1876,7 @@ class ZonesInfluenciaAdaptatives:
                         arxiu.close()
                         arxiuLlegit = True
                 else:
-                   print ("Path no vÃ lid")
+                   print ("Path no vàlid")
             else:
                 print ("Cancelat")
                 return
@@ -1858,9 +1901,9 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       CREACIO DE TAULA PROVISIONAL DE CAMP DE PUNTS + CAMP DE COBERTURA
 #       *****************************************************************************************************************
-        self.barraEstat_processant()
-        self.on_click_Recalcular()
         try:
+            self.barraEstat_processant()
+            self.on_click_Recalcular()
             drop="DROP TABLE IF EXISTS \"TaulaPunts_Temp\";\n"
             cur.execute(drop)
             conn.commit()
@@ -1988,8 +2031,19 @@ class ZonesInfluenciaAdaptatives:
                         
                         
                     selectRadi = "SELECT DISTINCT \"RadiInicial\" FROM \"EntitatPuntual_Temp_"+Fitxer+"\""
-                    cur.execute(selectRadi)
-                    radi = cur.fetchone()
+                    try:
+                        cur.execute(selectRadi)
+                        radi = cur.fetchone()
+                    except Exception as ex:
+                        print ("Error SELECT RadiInicial")
+                        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                        message = template.format(type(ex).__name__, ex.args)
+                        print (message)
+                        self.barraEstat_Error()
+                        QMessageBox.information(None, "Error", "Error SELECT RadiInicial")
+                        self.eliminaTaulesCalcul(Fitxer)
+            
+                        return
                     sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
                     buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(radi[0]))#self.dlg.txt_radi.text()
                     vlayer=buffer_resultat
@@ -1997,8 +2051,19 @@ class ZonesInfluenciaAdaptatives:
                     #uri = "dbname='test' host=localhost port=5432 user='user' password='password' key=gid type=POINT table=\"public\".\"test\" (geom) sql="
                     # layer - QGIS vector layer
                     sql_1="drop table if exists \"buffer_final_"+Fitxer+"\";\n"
-                    cur.execute(sql_1)
-                    conn.commit()
+                    try:
+                        cur.execute(sql_1)
+                        conn.commit()
+                    except Exception as ex:
+                        print ("Error DROP buffer_final")
+                        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                        message = template.format(type(ex).__name__, ex.args)
+                        print (message)
+                        self.barraEstat_Error()
+                        QMessageBox.information(None, "Error", "Error DROP buffer_final")
+                        self.eliminaTaulesCalcul(Fitxer)
+            
+                        return
                     
                     error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                     if error[0] != 0:
@@ -2682,7 +2747,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CARREGA DEL TEMATIC DE POBLACIO NO AFECTADA  
 #       *****************************************************************************************************************
         if (self.dlg.CB_mostrarPobNoAfectada.isChecked()):
-            """CreaciÃ³ del tematic de poblaciÃ³ no afectada"""
+            """Creació del tematic de població no afectada"""
             uri = QgsDataSourceUri()
             try:
                 uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
@@ -2747,7 +2812,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CARREGA DEL GRAF  
 #       *****************************************************************************************************************
         if (self.dlg.CB_dibuixarGraf.isChecked()):
-            """ CreaciÃ³ del tematic del graf"""
+            """ Creació del tematic del graf"""
             uri.setDataSource("","(SELECT * FROM \"graf_utilitzat_"+Fitxer+"\")","the_geom","","punt_id")
             titol=self.dlg.combo_punts.currentText()
             titol2='Graf: '
@@ -2765,8 +2830,19 @@ class ZonesInfluenciaAdaptatives:
                 vlayer = QgsVectorLayer(os.environ['TMP']+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
                 vlayer.setProviderEncoding(u'UTF-8')
                 vlayer.dataProvider().setEncoding(u'UTF-8')
-                cur.execute("DROP TABLE IF EXISTS \"Graf_utilitzat_"+Fitxer+"\";")
-                conn.commit()
+                try:
+                    cur.execute("DROP TABLE IF EXISTS \"Graf_utilitzat_"+Fitxer+"\";")
+                    conn.commit()
+                except Exception as ex:
+                    print ("Error DROP Graf_utilitzat")
+                    template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                    message = template.format(type(ex).__name__, ex.args)
+                    print (message)
+                    self.barraEstat_Error()
+                    QMessageBox.information(None, "Error", "Error DROP Graf_utilitzat")
+                    self.eliminaTaulesCalcul(Fitxer)
+        
+                    return
 
                 symbols = vlayer.renderer().symbols(QgsRenderContext())
                 symbol=symbols[0]
@@ -2871,8 +2947,15 @@ class ZonesInfluenciaAdaptatives:
         try:
             cur.execute(drop)
             conn.commit()
-        except:
+        except Exception as ex:
             print ("Error DROP final")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            self.barraEstat_Error()
+            QMessageBox.information(None, "Error", "Error DROP final")
+    
+            return
     
     def on_click_Esborra_temporals(self):
         global clicked_esborra
