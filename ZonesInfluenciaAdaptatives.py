@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.191120"
+Versio_modul="V_Q3.191213"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -181,6 +181,7 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.comboConnexio.currentIndexChanged.connect(self.on_Change_ComboConn)
         self.dlg.comboGraf.currentIndexChanged.connect(self.on_Change_ComboGraf)
         self.dlg.combo_punts.currentIndexChanged.connect(self.on_Change_ComboPunts)
+        self.dlg.comboLeyenda.currentIndexChanged.connect(self.on_Change_ComboLeyenda)
         self.dlg.bt_inici.clicked.connect(self.on_click_Inici)
         self.dlg.bt_ILLES.toggled.connect(self.on_click_MarcarIlles)
         self.dlg.bt_Parcel.toggled.connect(self.on_click_MarcarParcel)
@@ -188,6 +189,7 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.color.clicked.connect(self.on_click_Color)
         self.dlg.CB_tramsUtils.stateChanged.connect(self.on_click_CB_tramsUtils)
         self.dlg.Esborra_temp.clicked.connect(self.on_click_Esborra_temporals)
+        self.dlg.bt_ReloadLeyenda.clicked.connect(self.cerca_elements_Leyenda)
         # Create the dialog (after translation) and keep reference
 
         self.actions = []
@@ -408,6 +410,8 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.comboTras.setEnabled(False)
         self.dlg.chk_calc_local.setEnabled(False)
         self.dlg.Esborra_temp.setStyleSheet('border:0px solid #000000; background-color: transparent')
+        self.dlg.comboLeyenda.clear()
+        
         
         QApplication.processEvents()
     
@@ -466,6 +470,7 @@ class ZonesInfluenciaAdaptatives:
         s = QSettings()
         self.dlg.combo_punts.clear()
         self.dlg.comboGraf.clear()
+        self.dlg.comboLeyenda.clear()
         select = 'Selecciona connexió'
         nom_conn=self.dlg.comboConnexio.currentText()
         if nom_conn != select:
@@ -503,6 +508,7 @@ class ZonesInfluenciaAdaptatives:
                 llista2 = cur.fetchall()
                 self.ompleCombos(self.dlg.comboGraf, llista2, 'Selecciona una entitat', True)
                 self.dlg.Esborra_temp.setVisible(True) 
+                self.cerca_elements_Leyenda()
             except Exception as ex:
                 print ("Error a la connexio")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -573,8 +579,12 @@ class ZonesInfluenciaAdaptatives:
         errors = []
         if self.dlg.comboConnexio.currentText() == 'Selecciona connexió':
             errors.append('No hi ha seleccionada cap connexió')
-        if self.dlg.combo_punts.currentText() == 'Selecciona una entitat' or self.dlg.combo_punts.currentText() == '':
-            errors.append('No hi ha seleccionada cap capa de punts seleccionada')
+        if self.dlg.tabWidget_Destino.currentIndex() == 0:
+            if self.dlg.combo_punts.currentText() == 'Selecciona una entitat' or self.dlg.combo_punts.currentText() == '':
+                errors.append('No hi ha cap capa de destí seleccionada')
+        else:
+            if self.dlg.comboLeyenda.currentText() == 'Selecciona una entitat' or self.dlg.comboLeyenda.currentText() == '':
+                errors.append('No hi ha cap capa de destí seleccionada')
         if self.dlg.CB_tramsUtils.isChecked():
             if self.dlg.comboGraf.currentText() == 'Selecciona una entitat' or self.dlg.comboGraf.currentText() == '':
                 errors.append('No hi ha seleccionada cap capa de xarxa seleccionada')
@@ -678,7 +688,10 @@ class ZonesInfluenciaAdaptatives:
         predefInList = None
         for elem in llista:
             try:
-                item = QStandardItem(unicode(elem[0]))
+                if isinstance(elem, tuple):
+                    item = QStandardItem(unicode(elem[0]))
+                else:
+                    item = QStandardItem(str(elem))
             except TypeError:
                 item = QStandardItem(str(elem[0]))
             model.appendRow(item)
@@ -693,16 +706,103 @@ class ZonesInfluenciaAdaptatives:
                 combo.setCurrentIndex(0)
         combo.blockSignals (False)
     
+    def on_Change_ComboLeyenda(self):
+        """
+        En el moment en que es modifica la opcio escollida 
+        del combo o desplegable de la capa de punts,
+        automÃ ticament comprova els camps de la taula escollida.
+        """
+        
+        L_capa=self.dlg.comboLeyenda.currentText()  
+             
+        if L_capa == '' or L_capa == 'Selecciona una entitat':
+            return
+        
+        errors = self.controlEntitatLeyenda(L_capa) #retorna una llista amb aquells camps (id, geom, Nom) que no hi siguin.
+
+        if len(errors) < 2:  # errors es una llista amb els camps que te la taula, si hi ha menys de 2, significa que falta algun camp.
+            ErrorMessage = "La capa de destí seleccionada no es valida, necessita els camps (id, Nom). Li falten:\n"
+            if "id" not in errors:
+                ErrorMessage+= '\n-"id"\n'
+            #if "geom" not in errors:
+            #    ErrorMessage+= '\n-"geom"\n'
+            if "Nom" not in errors:
+                ErrorMessage+= '\n-"Nom"\n'
+            #if "NPlaces" not in errors:
+            #    ErrorMessage+= '\n-"NPlaces"\n'
+            
+            QMessageBox.information(None, "Error", ErrorMessage+'\n')
+            
+            return False
+    
+        else:
+            #self.dlg.TB_titol.setText(L_capa)
+            return True
+        
+        
+    def cerca_elements_Leyenda(self):
+        
+        if self.dlg.comboConnexio.currentText() != 'Selecciona connexió':
+            try: #Accedir als elements de la llegenda que siguin de tipus punt.
+                aux = []
+                layers = QgsProject.instance().mapLayers().values()
+                for layer in layers:
+                    #print(layer.type())
+                    if layer.type()==QgsMapLayer.VectorLayer:
+                        if layer.wkbType()==QgsWkbTypes.Point:
+                            aux.append(layer.name())
+                        
+                self.ompleCombos(self.dlg.comboLeyenda, aux, 'Selecciona una entitat', True)
+            except Exception as ex:
+                missatge="Error al afegir els elements de la llegenda"
+                print (missatge)
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                QMessageBox.information(None, "Error", missatge)
+                return
+            
+    def controlEntitatLeyenda(self,entitat):
+        '''
+        Aquest metode mira si la entitat rebuda te els camps (id, geom, Nom) retorna una llista amb aquells camps que hi siguin.
+        '''
+        global cur
+        global conn
+        list = []
+        
+        layers = QgsProject.instance().mapLayers().values()
+        if layers != None:
+            for layer in layers:
+                if layer.type()==QgsMapLayer.VectorLayer:
+                    if layer.sourceName() == entitat:
+                        for each in layer.fields():
+                            if each.name() == "id":
+                                list.append("id")
+                            #elif each.name() == "geom":
+                            #    list.append("geom")
+                            elif each.name() == "Nom":
+                                list.append("Nom")
+        return list   
+    
+    
     def on_click_Recalcular(self):
         #print ("recalcula")
         global cur
         global conn
-        entitat = self.dlg.combo_punts.currentText()
+        global Fitxer
+        if self.dlg.tabWidget_Destino.currentIndex() == 0:
+            entitat = self.dlg.combo_punts.currentText()
+        else:
+            entitat = 'LayerExportat'+Fitxer
         radiFix = self.dlg.txt_radiFix.text()
         drop = "drop table if exists \"Entitat_Temp\";"
         cur.execute(drop)
         conn.commit()
-        sql = "create local temp table \"Entitat_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
+        if self.dlg.tabWidget_Destino.currentIndex() == 0:
+            sql = "create local temp table \"Entitat_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
+        else:
+            sql = "create local temp table \"Entitat_Temp\" as select \"id_0\" AS \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id_0\";"
+        
         cur.execute(sql)
         conn.commit()
         drop = "drop table if exists \"EntitatPuntual_Temp_"+Fitxer+"\";\n"
@@ -777,7 +877,11 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CREACIO DE LA TAULA 'PUNTS_INTERES_TMP' QUE CONTINDRA ELS PUNTS D'INTERES PROJECTATS SOBRE EL TRAM
 #       *****************************************************************************************************************
         try:
-            geometria=self.campGeometria(self.dlg.combo_punts.currentText())
+            if self.dlg.tabWidget_Destino.currentIndex() == 0:
+                entitat = self.dlg.combo_punts.currentText()
+            else:
+                entitat = 'LayerExportat'+Fitxer
+            geometria=self.campGeometria(entitat)
         except Exception as ex:
             missatge="Error campGeometria "
             print (missatge)
@@ -1741,6 +1845,7 @@ class ZonesInfluenciaAdaptatives:
         global progress
         global geometria
         global pas_barra_iteracions
+        
 
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
@@ -1759,8 +1864,118 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", llista)
             return
         
+        if self.dlg.tabWidget_Destino.currentIndex() != 0:
+            if (not(self.on_Change_ComboLeyenda())):
+                return
+        
         arxiuLlegit = False
         QApplication.processEvents()
+        
+        uri = QgsDataSourceUri()
+        try:
+            uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
+        except Exception as ex:
+            print ("Error a la connexio")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "Error a la connexio")
+            conn.rollback()
+            return
+        #********************************************************************************************************
+        #    Afegir l'exportació del layer, i posteriorment llençar un avis en cas de que l'entitat sigui buida 
+        #********************************************************************************************************
+        '''Exportar temporalment la entitat seleccionada de la llegenda a la BBDD'''
+        if self.dlg.tabWidget_Destino.currentIndex() != 0: 
+            layers = QgsProject.instance().mapLayers().values()
+            if layers != None:
+                for layer in layers:
+                    if layer.name() == self.dlg.comboLeyenda.currentText():
+                        error = QgsVectorLayerExporter.exportLayer(layer, 'table="public"."LayerExportat'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", layer.crs(), False)
+                        if error[0] != 0:
+                            iface.messageBar().pushMessage(u'Error', error[1])
+                        
+                        #cada usuari tindrà la seva taula local temporal "LayerExportat", es una versió Local Temp del Layer exportat de la leyenda.
+                        #Amb l'objectiu de que dos usuaris puguin treballar amb el mateix nom de la taula, eliminant concurrencia.
+                        try:
+                            sql_SRID="SELECT Find_SRID('public', 'LayerExportat"+Fitxer+"', 'geom')"
+                            cur.execute(sql_SRID)
+                        except Exception as ex:
+                            print ("ERROR SELECT SRID")
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
+                            print (message)
+                            QMessageBox.information(None, "Error", "ERROR SELECT SRID")
+                            conn.rollback()
+                            self.eliminaTaulesCalcul(Fitxer)
+                
+                            self.bar.clearWidgets()
+                            self.dlg.Progres.setValue(0)
+                            self.dlg.Progres.setVisible(False)
+                            self.dlg.lblEstatConn.setText('Connectat')
+                            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+                            return
+                        auxlist = cur.fetchall()
+                        Valor_SRID=auxlist[0][0]
+                        alter = 'ALTER TABLE "LayerExportat'+Fitxer+'" ALTER COLUMN geom TYPE geometry(Point,'+str(Valor_SRID)+') USING ST_GeometryN(geom,1);'
+                        
+                        try:
+                            cur.execute(alter)
+                            conn.commit()
+                        except Exception as ex:
+                            print ("ALTER TABLE ERROR_geometry")
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
+                            print (message)
+                            QMessageBox.information(None, "Error", "ALTER TABLE ERROR_geometry")
+                            conn.rollback()
+                            self.eliminaTaulesCalcul(Fitxer)
+                
+                            self.bar.clearWidgets()
+                            self.dlg.Progres.setValue(0)
+                            self.dlg.Progres.setVisible(False)
+                            self.dlg.lblEstatConn.setText('Connectat')
+                            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+                            return
+                            
+                            
+                            
+                        select = 'select count (*) from "LayerExportat'+Fitxer+'"'
+                        
+                        try:                
+                            cur.execute(select)
+                            auxlist = cur.fetchall()
+                            if auxlist[0][0] == 0:
+                                ErrorMessage = 'La entitat escollida es buida'
+                                QMessageBox.information(None, "Error", ErrorMessage+'\n')
+                                conn.rollback()
+                                self.eliminaTaulesCalcul(Fitxer)
+                    
+                                self.bar.clearWidgets()
+                                self.dlg.Progres.setValue(0)
+                                self.dlg.Progres.setVisible(False)
+                                self.dlg.lblEstatConn.setText('Connectat')
+                                self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+                                return
+                                
+                        except Exception as ex:
+                            print("ERROR select LayerExportat")
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
+                            print (message)
+                            QMessageBox.information(None, "Error", errorMessage)
+                            conn.rollback()
+                            self.eliminaTaulesCalcul(Fitxer)
+                
+                            self.bar.clearWidgets()
+                            self.dlg.Progres.setValue(0)
+                            self.dlg.Progres.setVisible(False)
+                            self.dlg.lblEstatConn.setText('Connectat')
+                            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+                            return
+        
+        
+        
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LES TAULES RESUM DESDE EL CSV SUMINISTRAT 
 #       *****************************************************************************************************************
@@ -2662,7 +2877,10 @@ class ZonesInfluenciaAdaptatives:
         uri.setDataSource("","("+sql_total+")","the_geom","","id")
         QApplication.processEvents()
 
-        titol=self.dlg.combo_punts.currentText()
+        if self.dlg.tabWidget_Destino.currentIndex() == 0:
+            titol = self.dlg.combo_punts.currentText()
+        else:
+            titol = self.dlg.comboLeyenda.currentText()
         titol2='Cobertura de '
         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
         vlayer = QgsVectorLayer(uri.uri(False), titol3.decode('utf8'), "postgres")
@@ -2814,7 +3032,11 @@ class ZonesInfluenciaAdaptatives:
         if (self.dlg.CB_dibuixarGraf.isChecked()):
             """ Creació del tematic del graf"""
             uri.setDataSource("","(SELECT * FROM \"graf_utilitzat_"+Fitxer+"\")","the_geom","","punt_id")
-            titol=self.dlg.combo_punts.currentText()
+            
+            if self.dlg.tabWidget_Destino.currentIndex() == 0:
+                titol = self.dlg.combo_punts.currentText()
+            else:
+                titol = 'LayerExportat'+Fitxer
             titol2='Graf: '
             titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
             
@@ -2873,8 +3095,13 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       AFEGIM LA TAULA DE PUNTS DE ZONES D'INFLUENCIA
 #       *****************************************************************************************************************
-        titol=self.dlg.combo_punts.currentText()
-        sql_total = "select * from \""+ titol +"\""
+        if self.dlg.tabWidget_Destino.currentIndex() == 0:
+            titol = self.dlg.combo_punts.currentText()
+            sql_total = "select * from \""+ titol +"\""
+        else:
+            titol = self.dlg.comboLeyenda.currentText()
+            sql_total = "select * from \"LayerExportat"+Fitxer+"\""
+        
         #print sql_total
         QApplication.processEvents()
         uri.setDataSource("","("+sql_total+")","geom","","id")
@@ -2941,6 +3168,7 @@ class ZonesInfluenciaAdaptatives:
         drop += "DROP TABLE IF EXISTS \"AgrupacioRadiFix_Temp\";\n"
         drop += "DROP TABLE IF EXISTS \"EntitatBase_NRS_"+Fitxer+"\";\n"
         drop += "DROP TABLE IF EXISTS \"EntitatPuntual_Temp_"+Fitxer+"\";\n"
+        drop += 'DROP TABLE IF EXISTS "LayerExportat'+Fitxer+'";\n'
         self.bar.setEnabled(True)
         self.bar.clearWidgets()
         

@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>399</width>
-    <height>470</height>
+    <width>400</width>
+    <height>525</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,14 +21,14 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>399</width>
-    <height>470</height>
+    <width>400</width>
+    <height>525</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>399</width>
-    <height>470</height>
+    <width>400</width>
+    <height>525</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -49,7 +49,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>131</y>
+     <y>180</y>
      <width>207</width>
      <height>51</height>
     </rect>
@@ -112,7 +112,7 @@
      <x>10</x>
      <y>31</y>
      <width>381</width>
-     <height>51</height>
+     <height>101</height>
     </rect>
    </property>
    <property name="font">
@@ -124,21 +124,11 @@
    <property name="title">
     <string>Àrea d'influència al voltant de:</string>
    </property>
-   <widget class="QComboBox" name="combo_punts">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>23</y>
-      <width>251</width>
-      <height>22</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QPushButton" name="color">
     <property name="geometry">
      <rect>
       <x>320</x>
-      <y>19</y>
+      <y>40</y>
       <width>41</width>
       <height>31</height>
      </rect>
@@ -151,7 +141,7 @@
     <property name="geometry">
      <rect>
       <x>290</x>
-      <y>16</y>
+      <y>37</y>
       <width>31</width>
       <height>31</height>
      </rect>
@@ -166,12 +156,225 @@
      <string>Color:</string>
     </property>
    </widget>
+   <widget class="QTabWidget" name="tabWidget_Destino">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>271</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>16</width>
+      <height>16</height>
+     </size>
+    </property>
+    <widget class="QWidget" name="tab_BaseDades">
+     <attribute name="title">
+      <string>Base de Dades</string>
+     </attribute>
+     <widget class="QComboBox" name="combo_punts">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>241</width>
+        <height>22</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab_Llegenda">
+     <attribute name="title">
+      <string>Llegenda</string>
+     </attribute>
+     <widget class="QComboBox" name="comboLeyenda">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>171</width>
+        <height>22</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="bt_ReloadLeyenda">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>10</y>
+        <width>71</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <property name="palette">
+       <palette>
+        <active>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Light">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Midlight">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="BrightText">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Base">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </active>
+        <inactive>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Light">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Midlight">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="BrightText">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Base">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </inactive>
+        <disabled>
+         <colorrole role="Button">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Light">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Midlight">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="BrightText">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>255</red>
+            <green>217</green>
+            <blue>128</blue>
+           </color>
+          </brush>
+         </colorrole>
+         <colorrole role="Base">
+          <brush brushstyle="SolidPattern">
+           <color alpha="255">
+            <red>240</red>
+            <green>240</green>
+            <blue>240</blue>
+           </color>
+          </brush>
+         </colorrole>
+        </disabled>
+       </palette>
+      </property>
+      <property name="toolTip">
+       <string>Recarregar elements de llegenda</string>
+      </property>
+      <property name="text">
+       <string>Actualitza</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_5">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>180</y>
+     <y>229</y>
      <width>207</width>
      <height>72</height>
     </rect>
@@ -223,7 +426,7 @@ treballar</string>
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>131</y>
+     <y>180</y>
      <width>171</width>
      <height>121</height>
     </rect>
@@ -774,7 +977,7 @@ població no coberta</string>
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>251</y>
+     <y>300</y>
      <width>381</width>
      <height>165</height>
     </rect>
@@ -1013,7 +1216,7 @@ població no coberta</string>
    <property name="geometry">
     <rect>
      <x>240</x>
-     <y>429</y>
+     <y>478</y>
      <width>71</width>
      <height>31</height>
     </rect>
@@ -1447,7 +1650,7 @@ població no coberta</string>
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>429</y>
+     <y>478</y>
      <width>71</width>
      <height>31</height>
     </rect>
@@ -1511,7 +1714,7 @@ població no coberta</string>
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>451</y>
+     <y>500</y>
      <width>91</width>
      <height>21</height>
     </rect>
@@ -1531,7 +1734,7 @@ població no coberta</string>
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>81</y>
+     <y>120</y>
      <width>381</width>
      <height>51</height>
     </rect>
@@ -1543,7 +1746,7 @@ població no coberta</string>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>19</y>
+      <y>20</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -1567,7 +1770,7 @@ població no coberta</string>
     <property name="geometry">
      <rect>
       <x>270</x>
-      <y>19</y>
+      <y>20</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -1591,7 +1794,7 @@ població no coberta</string>
     <property name="geometry">
      <rect>
       <x>140</x>
-      <y>19</y>
+      <y>20</y>
       <width>101</width>
       <height>31</height>
      </rect>
@@ -1616,7 +1819,7 @@ població no coberta</string>
    <property name="geometry">
     <rect>
      <x>110</x>
-     <y>429</y>
+     <y>478</y>
      <width>71</width>
      <height>31</height>
     </rect>
@@ -1633,7 +1836,7 @@ de carrer</string>
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>420</y>
+     <y>469</y>
      <width>31</width>
      <height>31</height>
     </rect>
