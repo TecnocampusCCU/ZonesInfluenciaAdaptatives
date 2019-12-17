@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.191213"
+Versio_modul="V_Q3.191217"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -809,7 +809,7 @@ class ZonesInfluenciaAdaptatives:
         cur.execute(drop)
         conn.commit()
         sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id\");\n"
-        sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column \"RadiInicial\";\n"
+        sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column if exists \"RadiInicial\";\n"
         sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" rename column \"NR\" TO \"RadiInicial\";"
         #sql = "create local temp table \"EntitatPuntual_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
         cur.execute(sql)
@@ -1827,6 +1827,20 @@ class ZonesInfluenciaAdaptatives:
                 return False
 
 
+
+    def comprobarValidez(self,vlayer):        
+        #processing.algorithmHelp("native:shortestpathpointtolayer")
+        parameters= {'ERROR_OUTPUT' : 'TEMPORARY_OUTPUT',
+                     'IGNORE_RING_SELF_INTERSECTION' : False,
+                     'INPUT_LAYER' : vlayer,
+                     'INVALID_OUTPUT' : 'TEMPORARY_OUTPUT',
+                     'METHOD' : 1,
+                     'VALID_OUTPUT' : 'TEMPORARY_OUTPUT'}
+        
+        result = processing.run('qgis:checkvalidity',parameters)
+        
+        return result['VALID_OUTPUT']
+
     
     def on_click_Inici(self):
         """Aquesta funció genera tots els calculs amb tots el parametres que li hem introduit
@@ -1891,6 +1905,7 @@ class ZonesInfluenciaAdaptatives:
             if layers != None:
                 for layer in layers:
                     if layer.name() == self.dlg.comboLeyenda.currentText():
+                        layer = self.comprobarValidez(layer)
                         error = QgsVectorLayerExporter.exportLayer(layer, 'table="public"."LayerExportat'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", layer.crs(), False)
                         if error[0] != 0:
                             iface.messageBar().pushMessage(u'Error', error[1])
