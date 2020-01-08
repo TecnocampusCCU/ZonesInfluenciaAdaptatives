@@ -10,7 +10,7 @@
 name=Zones Influencia Adaptatives
 qgisMinimumVersion=3.0
 description=ZonesInfluenciaAdaptatives
-version=Q3.191217
+version=Q3.200108
 author=Josep Lopez
 email=jlopez@tecnocampus.cat
 

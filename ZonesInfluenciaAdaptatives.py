@@ -26,7 +26,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import *
 
 from PyQt5.QtGui import *
-from PyQt5.QtWidgets import QAction,QMessageBox,QTableWidgetItem,QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QInputDialog,QLineEdit,QColorDialog
+from PyQt5.QtWidgets import QAction,QMessageBox,QTableWidgetItem,QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QInputDialog,QLineEdit,QColorDialog,QToolBar
 from qgis.core import QgsMapLayer
 from qgis.core import QgsDataSourceUri
 from qgis.core import QgsVectorLayer
@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.191217"
+Versio_modul="V_Q3.200108"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -194,8 +194,18 @@ class ZonesInfluenciaAdaptatives:
 
         self.actions = []
         self.menu = self.tr(u'&CCU')
-        self.toolbar = self.iface.addToolBar(u'CCU')
-        self.toolbar.setObjectName(u'ZonesInfluenciaAdaptatives')
+        #self.toolbar = self.iface.addToolBar(u'CCU')
+        #self.toolbar.setObjectName(u'ZonesInfluenciaAdaptatives')
+        
+        trobat=False
+        for x in iface.mainWindow().findChildren(QToolBar,'CCU'): 
+            self.toolbar = x
+            trobat=True
+        
+        if not trobat:
+            self.toolbar = self.iface.addToolBar('CCU')
+            self.toolbar.setObjectName('CCU')
+        
         self.bar = QgsMessageBar()
         self.bar.setSizePolicy( QSizePolicy.Minimum, QSizePolicy.Fixed )
         self.dlg.setLayout(QGridLayout())
@@ -312,13 +322,16 @@ class ZonesInfluenciaAdaptatives:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        for action in self.actions:
+        '''for action in self.actions:
             self.iface.removePluginMenu(
                 self.tr(u'&Zones Influencia Adaptatives'),
                 action)
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
-        del self.toolbar
+        del self.toolbar'''
+        for action in self.actions:
+            self.iface.removePluginMenu('&Zones Influencia Adaptatives', action)
+            self.toolbar.removeAction(action)
 
 
     def on_click_ColorArea(self):
