@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200108"
+Versio_modul="V_Q3.200114"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -330,7 +330,7 @@ class ZonesInfluenciaAdaptatives:
         # remove the toolbar
         del self.toolbar'''
         for action in self.actions:
-            self.iface.removePluginMenu('&Zones Influencia Adaptatives', action)
+            self.iface.removePluginMenu('&CCU', action)
             self.toolbar.removeAction(action)
 
 
