@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200114"
+Versio_modul="V_Q3.200115"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -386,6 +386,7 @@ class ZonesInfluenciaAdaptatives:
             self.dlg.lblTras.setEnabled(True)
             self.dlg.comboTras.setEnabled(True)
             self.dlg.chk_calc_local.setEnabled(True)
+            self.dlg.chk_calc_local.setChecked(True)
     
     def EstatInicial(self):
         """Aquesta funció posa tots els elements de la interficie en el seu estat inicial."""
