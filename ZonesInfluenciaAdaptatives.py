@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200115"
+Versio_modul="V_Q3.200212"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -524,6 +524,7 @@ class ZonesInfluenciaAdaptatives:
                 self.dlg.Esborra_temp.setVisible(True) 
                 self.cerca_elements_Leyenda()
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 print ("Error a la connexio")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -556,6 +557,7 @@ class ZonesInfluenciaAdaptatives:
                     else:
                         QMessageBox.information(None, "Error", 'El graf seleccionat no té la capa de nusos corresponent.\nEscolliu un altre.')
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error Change_ComboGraf")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -579,6 +581,7 @@ class ZonesInfluenciaAdaptatives:
                     else:
                         QMessageBox.information(None, "Error", 'La capa de punts seleccionada no és vàlida ja que no té o li falta algun dels camps següents:\n-"NPlaces"\n-"RadiInicial"\n-"id"\n')
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error Change_ComboPunts")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -768,6 +771,7 @@ class ZonesInfluenciaAdaptatives:
                         
                 self.ompleCombos(self.dlg.comboLeyenda, aux, 'Selecciona una entitat', True)
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 missatge="Error al afegir els elements de la llegenda"
                 print (missatge)
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -866,6 +870,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error en crear duplicat de la xarxa "+XarxaCarrers
             print (missatge)
             
@@ -897,6 +902,7 @@ class ZonesInfluenciaAdaptatives:
                 entitat = 'LayerExportat'+Fitxer
             geometria=self.campGeometria(entitat)
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error campGeometria "
             print (missatge)
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -930,6 +936,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error en crear taula temporal punts_interes_tmp"
             print (missatge)
             
@@ -963,6 +970,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error en actualitzar taula temporal punts_interes_tmp"
             print (missatge)
             
@@ -994,6 +1002,7 @@ class ZonesInfluenciaAdaptatives:
         try:
             cur.execute("select \"pid\",\""+camp_radi+"\" from \"punts_interes_tmp\" order by \"pid\" asc ;\n")
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error llegir valor del camp "+camp_radi
             print (missatge)
             
@@ -1027,6 +1036,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error al crear la taula temporal tbl_punts_finals_tmp"
             print (missatge)
             
@@ -1060,6 +1070,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error al crear la taula temporal geo_punts_finals_tmp"
             print (missatge)
             
@@ -1104,6 +1115,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error al crear la taula temporal trams_finals_tmp"
             print (missatge)
             
@@ -1169,6 +1181,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error al crear la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1192,6 +1205,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'executar la function Cobertura"
             print (missatge)
             
@@ -1222,6 +1236,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar els trams inicials de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1252,6 +1267,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar els valors de cost de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1283,6 +1299,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar els valors de radi inicial de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1322,6 +1339,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar la fraccio final de tram de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1369,6 +1387,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar la geometria final de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1400,6 +1419,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar la fraccio inicial de tram de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1434,6 +1454,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar el camp radi_inic de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1466,6 +1487,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error a l'actualitzar la part inicial de la geometria de la taula temporal fraccio_trams_raw"
             print (missatge)
             
@@ -1500,6 +1522,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error en la eliminació de trams duplicats de la taula temporal fraccio_trams_tmp"
             print (missatge)
             
@@ -1531,6 +1554,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error al crear la taula temporal graf_utilitzat_"+fitxer
             print (missatge)
             
@@ -1562,6 +1586,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             missatge="Error al crear la taula temporal buffer_final"
             print (missatge)
             
@@ -1874,7 +1899,7 @@ class ZonesInfluenciaAdaptatives:
         global geometria
         global pas_barra_iteracions
         
-
+        self.dlg.setEnabled(False)
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
         if consoleWidget is None:
@@ -1890,10 +1915,12 @@ class ZonesInfluenciaAdaptatives:
                 llista += ("- "+errors[i] + '\n') 
                 
             QMessageBox.information(None, "Error", llista)
+            self.dlg.setEnabled(True)
             return
         
         if self.dlg.tabWidget_Destino.currentIndex() != 0:
             if (not(self.on_Change_ComboLeyenda())):
+                self.dlg.setEnabled(True)
                 return
         
         arxiuLlegit = False
@@ -1903,6 +1930,7 @@ class ZonesInfluenciaAdaptatives:
         try:
             uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error a la connexio")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -1930,6 +1958,7 @@ class ZonesInfluenciaAdaptatives:
                             sql_SRID="SELECT Find_SRID('public', 'LayerExportat"+Fitxer+"', 'geom')"
                             cur.execute(sql_SRID)
                         except Exception as ex:
+                            self.dlg.setEnabled(True)
                             print ("ERROR SELECT SRID")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -1952,6 +1981,7 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(alter)
                             conn.commit()
                         except Exception as ex:
+                            self.dlg.setEnabled(True)
                             print ("ALTER TABLE ERROR_geometry")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -1975,6 +2005,7 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(select)
                             auxlist = cur.fetchall()
                             if auxlist[0][0] == 0:
+                                self.dlg.setEnabled(True)
                                 ErrorMessage = 'La entitat escollida es buida'
                                 QMessageBox.information(None, "Error", ErrorMessage+'\n')
                                 conn.rollback()
@@ -1988,6 +2019,7 @@ class ZonesInfluenciaAdaptatives:
                                 return
                                 
                         except Exception as ex:
+                            self.dlg.setEnabled(True)
                             print("ERROR select LayerExportat")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -2036,6 +2068,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(insert)
                         conn.commit()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("I am unable to connect to the database")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2071,6 +2104,7 @@ class ZonesInfluenciaAdaptatives:
                             conn.commit()
                             #print "ok"                
                         except Exception as ex:
+                            self.dlg.setEnabled(True)
                             print ("I am unable to connect to the database")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -2107,6 +2141,7 @@ class ZonesInfluenciaAdaptatives:
                             conn.commit()
                             #print "ok"                
                         except Exception as ex:
+                            self.dlg.setEnabled(True)
                             print ("I am unable to connect to the database")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
@@ -2123,6 +2158,7 @@ class ZonesInfluenciaAdaptatives:
                    print ("Path no vàlid")
             else:
                 print ("Cancelat")
+                self.dlg.setEnabled(True)
                 return
         
         fesCalcul = True      
@@ -2130,6 +2166,7 @@ class ZonesInfluenciaAdaptatives:
             fesCalcul = False
         
         if not(fesCalcul):
+            self.dlg.setEnabled(True)
             return
         
         progressMessageBar = self.bar.createMessage('Processant:')
@@ -2166,6 +2203,7 @@ class ZonesInfluenciaAdaptatives:
             conn.commit
             #print "ok"                
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("I am unable to create the table")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2187,6 +2225,7 @@ class ZonesInfluenciaAdaptatives:
             taula = "\"JoinIlles_Habitants_Temp_"+ Fitxer + "\""
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("no s'ha creat illes")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2208,6 +2247,7 @@ class ZonesInfluenciaAdaptatives:
                 taula = "\"JoinParcel_Habitants_Temp\""
                 conn.commit()
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 print ("no s'ha creat parcel")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -2230,6 +2270,7 @@ class ZonesInfluenciaAdaptatives:
                 taula = "\"JoinNPol_Habitants_Temp\""
                 conn.commit()
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 print ("no s'ha creat npolicia")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -2263,6 +2304,7 @@ class ZonesInfluenciaAdaptatives:
                         print ("Connectat")
                         #print (uri.connectionInfo())
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Error a la connexio")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2279,6 +2321,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(selectRadi)
                         radi = cur.fetchone()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Error SELECT RadiInicial")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2299,6 +2342,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(sql_1)
                         conn.commit()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Error DROP buffer_final")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2323,9 +2367,11 @@ class ZonesInfluenciaAdaptatives:
                 else:
                     taula_buffer=self.calcul_graf(sql_total, "RadiInicial")
                     if taula_buffer=="ERROR":
+                        self.dlg.setEnabled(True)
                         return
                     
                     create = "create local temp table \"AgrupacioRadiFix_Temp\" AS select \"the_geom\", \"geom\", \"id\",\"NPlaces\",\"RadiInicial\",\"Cobertura\" from \"" + taula_buffer + "\" join \"TaulaPunts_Temp\" on (\"" + taula_buffer + "\".\"punt_id\" = \"TaulaPunts_Temp\".\"id\");"
+                    
         #       *****************************************************************************************************************
         #       FI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
         #       *****************************************************************************************************************
@@ -2342,6 +2388,7 @@ class ZonesInfluenciaAdaptatives:
             conn.commit()
             
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("no s'ha creat l'agrupacio")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2372,6 +2419,7 @@ class ZonesInfluenciaAdaptatives:
                     cur.execute(create)
                     conn.commit()  
                 except Exception as ex:
+                    self.dlg.setEnabled(True)
                     print ("no s'ha creat l'agregacio")
                     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                     message = template.format(type(ex).__name__, ex.args)
@@ -2404,6 +2452,7 @@ class ZonesInfluenciaAdaptatives:
                                 print ("Connectat")
                                 #print (uri.connectionInfo())
                             except Exception as ex:
+                                self.dlg.setEnabled(True)
                                 print ("Error a la connexio")
                                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                                 message = template.format(type(ex).__name__, ex.args)
@@ -2441,6 +2490,7 @@ class ZonesInfluenciaAdaptatives:
                         else:
                             taula_buffer=self.calcul_graf(sql_total,"nouradi")
                             if taula_buffer=="ERROR":
+                                self.dlg.setEnabled(True)
                                 return
                             
                             create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", \"the_geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
@@ -2448,6 +2498,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Agregacio nou radi no feta")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2473,6 +2524,7 @@ class ZonesInfluenciaAdaptatives:
                         progress.setValue(progress.value()+pas_barra_iteracions)
                         QApplication.processEvents()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Agregacio nou radi no feta")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2497,6 +2549,7 @@ class ZonesInfluenciaAdaptatives:
                     progress.setValue(progress.value()+pas_barra_iteracions)
                     QApplication.processEvents()
                 except Exception as ex:
+                    self.dlg.setEnabled(True)
                     print ("No s'ha pogut realitzar la tasca")
                     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                     message = template.format(type(ex).__name__, ex.args)
@@ -2527,6 +2580,7 @@ class ZonesInfluenciaAdaptatives:
                                 print ("Connectat")
                                 #print (uri.connectionInfo())
                             except Exception as ex:
+                                self.dlg.setEnabled(True)
                                 print ("Error a la connexio")
                                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                                 message = template.format(type(ex).__name__, ex.args)
@@ -2565,6 +2619,7 @@ class ZonesInfluenciaAdaptatives:
                         else:
                             taula_buffer=self.calcul_graf(sql_total,"nouradi")
                             if taula_buffer=="ERROR":
+                                self.dlg.setEnabled(True)
                                 return
                             
                             create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", \"the_geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
@@ -2572,6 +2627,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Agregacio nou radi no feta")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2594,6 +2650,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Agregacio nou radi no feta " + str(i))
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2624,6 +2681,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit() 
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("No s'ha pogut realitzar la tasca")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2648,6 +2706,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("No s'ha fet la unio")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2671,6 +2730,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("No s'ha fet l'agregacio post")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2690,6 +2750,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("No s'ha fet l'agregacio COMBI")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2712,6 +2773,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("No s'ha fet l'agregacio ENTITAT BASE")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2733,6 +2795,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("No s'ha fet l'agregacio ENTITAT BASE NRS")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2762,6 +2825,7 @@ class ZonesInfluenciaAdaptatives:
                         print ("Connectat")
                         #print (uri.connectionInfo())
                     except Exception as ex:
+                        self.dlg.setEnabled(True)
                         print ("Error a la connexio")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
@@ -2804,6 +2868,7 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(create)
                 conn.commit()
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 print ("Agregacio nou radi no feta")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -2825,6 +2890,7 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(create)
                 conn.commit()
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 print ("Agregacio nou radi no feta")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -2850,6 +2916,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()  
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("no s'ha creat l'agregacio")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2875,6 +2942,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(create)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error al crear la TAULA_FINAL")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2890,6 +2958,7 @@ class ZonesInfluenciaAdaptatives:
             uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
             print ("Connectat")
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error a la connexio")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2950,6 +3019,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(sql)
             Habitants_afectats = cur.fetchone()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error llegint el nombre d'habitants afectats")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -2975,6 +3045,7 @@ class ZonesInfluenciaAdaptatives:
             print ("HABITANTS AFECTATS: "+str(Habitants_afectats[0]))
             print ("HABITANTS TOTALS: "+str(Habitants_totals[0]))
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error llegint el nombre d'habitants totals")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -3000,6 +3071,7 @@ class ZonesInfluenciaAdaptatives:
                 uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
                 print ("Connectat")
             except Exception as ex:
+                self.dlg.setEnabled(True)
                 print ("Error a la connexio")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
@@ -3085,6 +3157,7 @@ class ZonesInfluenciaAdaptatives:
                     cur.execute("DROP TABLE IF EXISTS \"Graf_utilitzat_"+Fitxer+"\";")
                     conn.commit()
                 except Exception as ex:
+                    self.dlg.setEnabled(True)
                     print ("Error DROP Graf_utilitzat")
                     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                     message = template.format(type(ex).__name__, ex.args)
@@ -3178,7 +3251,7 @@ class ZonesInfluenciaAdaptatives:
         self.bar.clearWidgets()
         QApplication.processEvents()
         print ("Final")
-    
+        self.dlg.setEnabled(True)
     
     
     def eliminaTaulesCalcul(self,Fitxer):
@@ -3198,6 +3271,11 @@ class ZonesInfluenciaAdaptatives:
         drop += "DROP TABLE IF EXISTS \"EntitatBase_NRS_"+Fitxer+"\";\n"
         drop += "DROP TABLE IF EXISTS \"EntitatPuntual_Temp_"+Fitxer+"\";\n"
         drop += 'DROP TABLE IF EXISTS "LayerExportat'+Fitxer+'";\n'
+        drop += 'DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";\n'
+        drop += 'DROP TABLE IF EXISTS \"AgregacioTotal_Temp\";\n'
+        drop += 'DROP TABLE IF EXISTS \"AgregacioSumaHabPostBucle_Temp\";\n'
+        
+        
         self.bar.setEnabled(True)
         self.bar.clearWidgets()
         
@@ -3205,6 +3283,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(drop)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             print ("Error DROP final")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
@@ -3249,6 +3328,11 @@ class ZonesInfluenciaAdaptatives:
         self.DropTempTable("necessarypoints")
         self.DropTempTable("LayerExportat")
         self.DropTempTable("Resum_Temp_")
+        self.DropTempTable("AgregacioNouRadi_Temp")
+        self.DropTempTable("AgregacioTotal_Temp")
+        self.DropTempTable("AgregacioSumaHabPostBucle_Temp")
+        
+        
 
     def DropTempTable(self,taula):
         '''
@@ -3261,7 +3345,8 @@ class ZonesInfluenciaAdaptatives:
             for elem in llista:
                 try:
                     cur.execute(elem[0])
-                except Exception as ex:            
+                except Exception as ex:  
+                    self.dlg.setEnabled(True)          
                     msg_error="Error en la sentencia SQL següent:\n"+elem[0]
                     print(msg_error)
                     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -3270,6 +3355,7 @@ class ZonesInfluenciaAdaptatives:
                     QMessageBox.information(None, "Error", msg_error)
             conn.commit()
         except Exception as ex:
+            self.dlg.setEnabled(True)
             msg_error="Error en la sentencia SQL següent:\n"+SQLDrop
             print(msg_error)
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
