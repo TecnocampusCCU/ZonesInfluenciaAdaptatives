@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200212"
+Versio_modul="V_Q3.200218"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -425,6 +425,7 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.chk_calc_local.setEnabled(False)
         self.dlg.Esborra_temp.setStyleSheet('border:0px solid #000000; background-color: transparent')
         self.dlg.comboLeyenda.clear()
+        self.dlg.setEnabled(True)
         
         
         QApplication.processEvents()
@@ -3290,6 +3291,7 @@ class ZonesInfluenciaAdaptatives:
             print (message)
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "Error DROP final")
+            self.dlg.setEnabled(True)
     
             return
     
