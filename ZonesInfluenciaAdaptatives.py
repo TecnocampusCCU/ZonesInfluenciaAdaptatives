@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200218"
+Versio_modul="V_Q3.200304"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -1870,12 +1870,12 @@ class ZonesInfluenciaAdaptatives:
 
     def comprobarValidez(self,vlayer):        
         #processing.algorithmHelp("native:shortestpathpointtolayer")
-        parameters= {'ERROR_OUTPUT' : 'TEMPORARY_OUTPUT',
-                     'IGNORE_RING_SELF_INTERSECTION' : False,
+        parameters= {'ERROR_OUTPUT' : 'memory:',
+                     #'IGNORE_RING_SELF_INTERSECTION' : False,
                      'INPUT_LAYER' : vlayer,
-                     'INVALID_OUTPUT' : 'TEMPORARY_OUTPUT',
+                     'INVALID_OUTPUT' : 'memory:',
                      'METHOD' : 1,
-                     'VALID_OUTPUT' : 'TEMPORARY_OUTPUT'}
+                     'VALID_OUTPUT' : 'memory:'}
         
         result = processing.run('qgis:checkvalidity',parameters)
         
@@ -1930,6 +1930,8 @@ class ZonesInfluenciaAdaptatives:
         uri = QgsDataSourceUri()
         try:
             uri.setConnection(host1,port1,nomBD1,usuari1,contra1)
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: rgb(255, 125, 155)')
+            self.dlg.lblEstatConn.setText("Processant...")
         except Exception as ex:
             self.dlg.setEnabled(True)
             print ("Error a la connexio")
