@@ -124,7 +124,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200304"
+Versio_modul="V_Q3.200415"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -2649,7 +2649,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(drop)
                         conn.commit()            
                         #josep create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
-                        create = "CREATE TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
+                        create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
@@ -2679,7 +2679,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(drop)
             conn.commit()
             #josep create = "create local temp table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"NPlaces\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"NPlaces\",\"Cobertura\";"
-            create = "create table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"NPlaces\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"NPlaces\",\"Cobertura\";"
+            create = "create local temp table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"NPlaces\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"NPlaces\",\"Cobertura\";"
             #print create
             cur.execute(create)
             conn.commit() 
@@ -2727,6 +2727,7 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"AgregacioSumaHabConjunt_Temp\";\n"
             cur.execute(drop)
             conn.commit()
+            #create = "create local temp table \"AgregacioSumaHabConjunt_Temp\" AS "
             create = "create local temp table \"AgregacioSumaHabConjunt_Temp\" AS "
             create += "select \"id_zi_combi\", sum("+ taula +".\"Habitants\") as \"Habitants\",  \"the_geom\" from \"UnioZI_InfluenciesHab_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"UnioZI_InfluenciesHab_Temp\".\"the_geom\") group by \"UnioZI_InfluenciesHab_Temp\".\"id_zi_combi\",\"the_geom\";"
             #print create
@@ -2914,7 +2915,7 @@ class ZonesInfluenciaAdaptatives:
             cur.execute(drop)
             conn.commit()
             #create = "create local temp table \"AgregacioTotal_Temp\" AS select \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\", sum(\"Habitants\") as \"Habitants\" from \"AgregacioTotalBuffer_Temp\" join "+ taula + " on ST_Intersects("+ taula + ".\"geom\", \"AgregacioTotalBuffer_Temp\".\"the_geom\") group by \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\";"
-            create = "create table \"AgregacioTotal_Temp\" AS select \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\", sum(\"Habitants\") as \"Habitants\" from \"AgregacioTotalBuffer_Temp\" join "+ taula + " on ST_Intersects("+ taula + ".\"geom\", \"AgregacioTotalBuffer_Temp\".\"the_geom\") group by \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\";"
+            create = "create local temp table \"AgregacioTotal_Temp\" AS select \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\", sum(\"Habitants\") as \"Habitants\" from \"AgregacioTotalBuffer_Temp\" join "+ taula + " on ST_Intersects("+ taula + ".\"geom\", \"AgregacioTotalBuffer_Temp\".\"the_geom\") group by \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\";"
             #print create
             cur.execute(create)
             conn.commit()  
@@ -3016,7 +3017,10 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CALCUL DE HABITANTS NO COBERTS  
 #       *****************************************************************************************************************
         """ Calcul dels habitants afectats"""
-        sql = "SELECT SUM(\"habitantsreals\") as Habitants from \"ZI_Total_Combi_" + Fitxer +"\";"
+        #sql = "SELECT SUM(\"habitantsreals\") as Habitants from \"ZI_Total_Combi_" + Fitxer +"\";"
+        
+        sql2 = "select distinct(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id\"),\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"Habitants\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\")"
+        sql="select sum(resultat.\"Habitants\") from ("+sql2+") as resultat"
         Habitants_afectats = 0
         try:
             cur.execute(sql)
@@ -3086,7 +3090,7 @@ class ZonesInfluenciaAdaptatives:
                 return
                 
             sql = "select * from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" where \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id\" not in (select \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\"))"
-            #print sql
+            #print (sql)
             uri.setDataSource("","(" + sql+ ")","geom","","id")
             
             titol2='Temátic de població no afectada: '
@@ -3260,14 +3264,14 @@ class ZonesInfluenciaAdaptatives:
     def eliminaTaulesCalcul(self,Fitxer):
         '''
         Aquesta funció s'encarrega d'eliminar les taules utilitzades durant el càlcul
-        '''     
-        drop = "DROP TABLE IF EXISTS \"TAULA_FINAL_" + Fitxer +"\";\n"
+        '''
+        drop=""     
+        drop += "DROP TABLE IF EXISTS \"TAULA_FINAL_" + Fitxer +"\";\n"
         drop += "DROP TABLE IF EXISTS \"ZI_Total_Combi_" + Fitxer +"\";\n"
         drop += "DROP TABLE IF EXISTS \"graf_utilitzat_"+Fitxer+"\";\n"
-        drop += "DROP TABLE IF EXISTS \"JoinIlles_Habitants_Temp_"+ Fitxer + "\";\n"
         drop += "DROP TABLE IF EXISTS \"EntitatBase\";\n"
         drop += "DROP TABLE IF EXISTS \"EntitatBase_NRS_"+Fitxer+"\";\n"
-        drop +="DROP TABLE IF EXISTS  \"buffer_final_"+Fitxer+"\";\n"
+        drop += "DROP TABLE IF EXISTS \"buffer_final_"+Fitxer+"\";\n"
         drop += "DROP TABLE IF EXISTS \"JoinIlles_Habitants_Temp_"+ Fitxer + "\";\n"
         drop += "DROP TABLE IF EXISTS \"AgregacioSumaHab_Temp_"+ Fitxer + "\";\n"
         drop += "DROP TABLE IF EXISTS \"AgrupacioRadiFix_Temp\";\n"
@@ -3460,8 +3464,9 @@ class PointTool(QgsMapTool):
             crsDest = QgsCoordinateReferenceSystem(4326)  # WGS 84 / UTM zone 33N
             xform = QgsCoordinateTransform(actual_crs, crsDest,QgsProject.instance())
             pt1 = xform.transform(point0)
+            #print('https://www.google.com/maps/@?api=1&map_action=pano&pano=tu510ie_z4ptBZYo2BGEJg&viewpoint='+str(pt1.y())+','+str(pt1.x())+'&heading='+str(int(angle)) +'&pitch=10&fov=250')
            
-            webbrowser.open_new('https://www.google.com/maps/@?api=1&map_action=pano&pano=tu510ie_z4ptBZYo2BGEJg&viewpoint='+str(pt1.y())+','+str(pt1.x())+'&heading='+str(int(angle)) +'&pitch=10&fov=250')
+            webbrowser.open_new('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+str(pt1.y())+','+str(pt1.x())+'&heading='+str(int(angle)) +'&pitch=10&fov=250')
             rl.reset()
             rb.reset()
             #self.setCursor(self.stdCursor)           
