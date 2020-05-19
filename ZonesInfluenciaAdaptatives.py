@@ -92,7 +92,8 @@ import processing
 from processing.tools import dataobjects
 from qgis.utils import iface
 from PyQt5.QtSql import *
-
+import collections
+import qgis.utils
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -124,7 +125,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200415"
+Versio_modul="V_Q3.200519"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -739,15 +740,17 @@ class ZonesInfluenciaAdaptatives:
         errors = self.controlEntitatLeyenda(L_capa) #retorna una llista amb aquells camps (id, geom, Nom) que no hi siguin.
 
         if len(errors) < 2:  # errors es una llista amb els camps que te la taula, si hi ha menys de 2, significa que falta algun camp.
-            ErrorMessage = "La capa de destí seleccionada no es valida, necessita els camps (id, Nom). Li falten:\n"
+            ErrorMessage = "La capa de destí seleccionada no es valida, necessita els camps (id, Nom, NPlaces, RadiInicial). Li falten:\n"
             if "id" not in errors:
                 ErrorMessage+= '\n-"id"\n'
             #if "geom" not in errors:
             #    ErrorMessage+= '\n-"geom"\n'
             if "Nom" not in errors:
                 ErrorMessage+= '\n-"Nom"\n'
-            #if "NPlaces" not in errors:
-            #    ErrorMessage+= '\n-"NPlaces"\n'
+            if "NPlaces" not in errors:
+                ErrorMessage+= '\n-"NPlaces"\n'
+            if "RadiInicial" not in errors:
+                ErrorMessage+= '\n-"RadiInicial"\n'
             
             QMessageBox.information(None, "Error", ErrorMessage+'\n')
             
@@ -797,8 +800,10 @@ class ZonesInfluenciaAdaptatives:
                         for each in layer.fields():
                             if each.name() == "id":
                                 list.append("id")
-                            #elif each.name() == "geom":
-                            #    list.append("geom")
+                            elif each.name() == "NPlaces":
+                                list.append("NPlaces")
+                            elif each.name() == "RadiInicial":
+                                list.append("RadiInicial")
                             elif each.name() == "Nom":
                                 list.append("Nom")
         return list   
@@ -820,19 +825,23 @@ class ZonesInfluenciaAdaptatives:
         if self.dlg.tabWidget_Destino.currentIndex() == 0:
             sql = "create local temp table \"Entitat_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
         else:
-            sql = "create local temp table \"Entitat_Temp\" as select \"id_0\" AS \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id_0\";"
+            sql = "create local temp table \"Entitat_Temp\" as select \"id\" AS \"id_orig\",\"id_0\" AS \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id_0\";"
         
         cur.execute(sql)
         conn.commit()
         drop = "drop table if exists \"EntitatPuntual_Temp_"+Fitxer+"\";\n"
         cur.execute(drop)
         conn.commit()
-        sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id\");\n"
+        if self.dlg.tabWidget_Destino.currentIndex() == 0:
+            sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id\");\n"
+        else:
+            sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id_orig\");\n"
         sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column if exists \"RadiInicial\";\n"
         sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" rename column \"NR\" TO \"RadiInicial\";"
+        #sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column if exists \"id_orig\";\n"
         #sql = "create local temp table \"EntitatPuntual_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
         cur.execute(sql)
-        #print sql
+        #print (sql)
         conn.commit()
         
     def campGeometria(self, taula):
@@ -1664,7 +1673,7 @@ class ZonesInfluenciaAdaptatives:
         except:
             missatge="El nombre d'habitants proper a les entitats escollides, es massa elevat. Pot ser degut a la poca capacitat de les entitats o a haber escollit un target de població massa elevat pel tipus de entitat."
             print(missatge)
-            QMessageBox.information(None, "Error", "El nombre d'habitants proper a les entitats escollides, es massa elevat. Pot ser degut a la poca capacitat de les entitats o a haber escollit un target de població massa elevat pel tipus de entitat.")
+            QMessageBox.information(None, "Error", "El nombre d'habitants proper a les entitats escollides, és massa elevat. Pot ser degut a la poca capacitat de les entitats o a haber escollit un target de població massa elevat pel tipus de entitat.")
             return "ERROR"
 
         result_singleparts = processing.run('native:multiparttosingleparts', {"INPUT": linias_graf,
@@ -1683,8 +1692,8 @@ class ZonesInfluenciaAdaptatives:
                                                                     "FIELD": 'id',
                                                                     "OUTPUT": 'memory:'})
         
-        buffer_dissolved = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
-                                                             "OUTPUT": 'memory:'})        
+        #buffer_dissolved = processing.run('native:dissolve', {"INPUT": result_buffer['OUTPUT'],
+        #                                                     "OUTPUT": 'memory:'})        
         
         return result_buffer_dissolve['OUTPUT'],linias_graf
 
@@ -1843,7 +1852,7 @@ class ZonesInfluenciaAdaptatives:
 
         return lineas
     
-    
+ 
     
     def arxiusExisteixen(self, path):
         '''Aquesta funcio s'encarrega de comprovar que els arxius necessaris per a cada execució estiguin a la carpeta seleccio'''
@@ -1868,11 +1877,21 @@ class ZonesInfluenciaAdaptatives:
 
 
 
-    def comprobarValidez(self,vlayer):        
+    def comprobarValidez(self,vlayer,CRS):        
         #processing.algorithmHelp("native:shortestpathpointtolayer")
+        epsg = CRS
+        
+        alg_params = {
+            'INPUT': vlayer,
+            'OPERATION': '',
+            'TARGET_CRS': QgsCoordinateReferenceSystem('EPSG:'+str(epsg)),
+            'OUTPUT': 'memory:'
+        }
+        layer_repro = processing.run('native:reprojectlayer', alg_params)
+
         parameters= {'ERROR_OUTPUT' : 'memory:',
                      #'IGNORE_RING_SELF_INTERSECTION' : False,
-                     'INPUT_LAYER' : vlayer,
+                     'INPUT_LAYER' : layer_repro['OUTPUT'],
                      'INVALID_OUTPUT' : 'memory:',
                      'METHOD' : 1,
                      'VALID_OUTPUT' : 'memory:'}
@@ -1950,7 +1969,28 @@ class ZonesInfluenciaAdaptatives:
             if layers != None:
                 for layer in layers:
                     if layer.name() == self.dlg.comboLeyenda.currentText():
-                        layer = self.comprobarValidez(layer)
+                        try:
+                            sql_SRID="SELECT Find_SRID('public', 'ILLES', 'geom')"
+                            cur.execute(sql_SRID)
+                        except Exception as ex:
+                            self.dlg.setEnabled(True)
+                            print ("ERROR SELECT SRID ILLES")
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                            message = template.format(type(ex).__name__, ex.args)
+                            print (message)
+                            QMessageBox.information(None, "Error", "ERROR SELECT SRID ILLES")
+                            conn.rollback()
+                            self.eliminaTaulesCalcul(Fitxer)
+                
+                            self.bar.clearWidgets()
+                            self.dlg.Progres.setValue(0)
+                            self.dlg.Progres.setVisible(False)
+                            self.dlg.lblEstatConn.setText('Connectat')
+                            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+                            return
+                        auxlist = cur.fetchall()
+                        Valor_SRID=auxlist[0][0]
+                        layer = self.comprobarValidez(layer,Valor_SRID)
                         error = QgsVectorLayerExporter.exportLayer(layer, 'table="public"."LayerExportat'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", layer.crs(), False)
                         if error[0] != 0:
                             iface.messageBar().pushMessage(u'Error', error[1])
@@ -2470,6 +2510,7 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(selectNouRadi)
                             nouRadi = cur.fetchone()
                             sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+
                             buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))
                             vlayer=buffer_resultat
                             vlayer_graf=graf_resultat
@@ -2599,7 +2640,9 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(selectNouRadi)
                             nouRadi = cur.fetchone()
                             sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""                     
-                            buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))#self.dlg.txt_radi.text()
+
+                            buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))
+                            
                             vlayer=buffer_resultat
                             vlayer_graf=graf_resultat
 
@@ -2987,10 +3030,18 @@ class ZonesInfluenciaAdaptatives:
         titol3=titol2.encode('utf8','strict')+titol.encode('utf8','strict')
         vlayer = QgsVectorLayer(uri.uri(False), titol3.decode('utf8'), "postgres")
         QApplication.processEvents()
+
         if vlayer.isValid():
             Cobertura=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
             """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Cobertura_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                save_options = QgsVectorFileWriter.SaveVectorOptions()
+                save_options.driverName = "ESRI Shapefile"
+                save_options.fileEncoding = "UTF-8"
+                transform_context = QgsProject.instance().transformContext()
+                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Cobertura_"+Cobertura+".shp",transform_context,save_options)
+            else:
+                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Cobertura_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
             """Es carrega el Shape a l'entorn del QGIS"""
             vlayer = QgsVectorLayer(os.environ['TMP']+"/Cobertura_"+Cobertura+".shp", titol3.decode('utf8'), "ogr")
             vlayer.setProviderEncoding(u'UTF-8')
@@ -3099,7 +3150,14 @@ class ZonesInfluenciaAdaptatives:
             if vlayer.isValid():
                 Tematic=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
                 """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                    save_options = QgsVectorFileWriter.SaveVectorOptions()
+                    save_options.driverName = "ESRI Shapefile"
+                    save_options.fileEncoding = "UTF-8"
+                    transform_context = QgsProject.instance().transformContext()
+                    error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp",transform_context,save_options)
+                else:
+                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                 """Es carrega el Shape a l'entorn del QGIS"""
                 vlayer = QgsVectorLayer(os.environ['TMP']+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
                 vlayer.setProviderEncoding(u'UTF-8')
@@ -3155,7 +3213,14 @@ class ZonesInfluenciaAdaptatives:
             if vlayer.isValid():
                 Graf=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
                 """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                    save_options = QgsVectorFileWriter.SaveVectorOptions()
+                    save_options.driverName = "ESRI Shapefile"
+                    save_options.fileEncoding = "UTF-8"
+                    transform_context = QgsProject.instance().transformContext()
+                    error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp",transform_context,save_options)
+                else:
+                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                 """Es carrega el Shape a l'entorn del QGIS"""
                 vlayer = QgsVectorLayer(os.environ['TMP']+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
                 vlayer.setProviderEncoding(u'UTF-8')
@@ -3223,7 +3288,14 @@ class ZonesInfluenciaAdaptatives:
         if vlayer.isValid():
             Cobertura=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
             """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-            error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                save_options = QgsVectorFileWriter.SaveVectorOptions()
+                save_options.driverName = "ESRI Shapefile"
+                save_options.fileEncoding = "UTF-8"
+                transform_context = QgsProject.instance().transformContext()
+                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp",transform_context,save_options)
+            else:
+                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
             """Es carrega el Shape a l'entorn del QGIS"""
             vlayer = QgsVectorLayer(os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp", titol3.decode('utf8'), "ogr")
             vlayer.setProviderEncoding(u'UTF-8')
