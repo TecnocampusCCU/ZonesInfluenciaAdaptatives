@@ -125,7 +125,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.200519"
+Versio_modul="V_Q3.210215"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -143,6 +143,7 @@ progress=None
 pas_barra_iteracions=1
 icon_path=""
 clicked_esborra=0
+TEMPORARY_PATH=""
         
 class ZonesInfluenciaAdaptatives:
     """QGIS Plugin Implementation."""
@@ -394,6 +395,7 @@ class ZonesInfluenciaAdaptatives:
         global Versio_modul
         global micolor
         global micolorArea
+        global TEMPORARY_PATH
         self.bar.clearWidgets()
         self.dlg.bt_ILLES.setChecked(True)
         self.dlg.bt_Parcel.setChecked(False)
@@ -427,6 +429,10 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.Esborra_temp.setStyleSheet('border:0px solid #000000; background-color: transparent')
         self.dlg.comboLeyenda.clear()
         self.dlg.setEnabled(True)
+        if (os.name=='nt'):
+            TEMPORARY_PATH=os.environ['TMP']
+        else:
+            TEMPORARY_PATH=os.environ['TMPDIR']
         
         
         QApplication.processEvents()
@@ -1918,6 +1924,7 @@ class ZonesInfluenciaAdaptatives:
         global progress
         global geometria
         global pas_barra_iteracions
+        global TEMPORARY_PATH
         
         self.dlg.setEnabled(False)
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -2479,7 +2486,7 @@ class ZonesInfluenciaAdaptatives:
                 if self.dlg.CB_tramsUtils.isChecked():
                     try:
                         alter = "alter table \"AgregacioSumaHab_Temp_"+Fitxer+"\" add column \"nouradi\" integer;\n"
-                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\")))::integer;"
+                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\")))))::integer;"
                         cur.execute(alter)
                         conn.commit()
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
@@ -2561,7 +2568,7 @@ class ZonesInfluenciaAdaptatives:
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
                         cur.execute(drop)
                         conn.commit()                    
-                        create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
+                        create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                         #print create
                         cur.execute(create)
                         conn.commit()
@@ -2608,7 +2615,7 @@ class ZonesInfluenciaAdaptatives:
                 if self.dlg.CB_tramsUtils.isChecked():
                     try:
                         alter = "alter table \"AgregacioSumaHab_Temp_"+Fitxer+"\" add column \"nouradi\" integer;\n"
-                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\")))::integer;"
+                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\")))))::integer;"
                         cur.execute(alter)
                         conn.commit()
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
@@ -2692,7 +2699,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(drop)
                         conn.commit()            
                         #josep create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
-                        create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
+                        create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
@@ -2838,7 +2845,7 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"EntitatBase_NRS_"+Fitxer+"\";\n"
             cur.execute(drop)
             conn.commit()
-            create = "create table \"EntitatBase_NRS_"+Fitxer+"\" as select *,round(\"radi\"*sqrt(\"NPlaces\"/(\"Habitants_Solapats\"*(\"habitantsreals\"/\"Suma_Habitants_Solapats\")))) NRS from \"EntitatBase\";"
+            create = "create table \"EntitatBase_NRS_"+Fitxer+"\" as select *,round(\"radi\"*sqrt(\"NPlaces\"/(\"Habitants_Solapats\"*(\"habitantsreals\"/\"Suma_Habitants_Solapats\")*\"Cobertura\"))) NRS from \"EntitatBase\";"
             cur.execute(create)
             conn.commit()
         except Exception as ex:
@@ -3039,11 +3046,11 @@ class ZonesInfluenciaAdaptatives:
                 save_options.driverName = "ESRI Shapefile"
                 save_options.fileEncoding = "UTF-8"
                 transform_context = QgsProject.instance().transformContext()
-                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Cobertura_"+Cobertura+".shp",transform_context,save_options)
+                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Cobertura_"+Cobertura+".shp",transform_context,save_options)
             else:
-                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Cobertura_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Cobertura_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
             """Es carrega el Shape a l'entorn del QGIS"""
-            vlayer = QgsVectorLayer(os.environ['TMP']+"/Cobertura_"+Cobertura+".shp", titol3.decode('utf8'), "ogr")
+            vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Cobertura_"+Cobertura+".shp", titol3.decode('utf8'), "ogr")
             vlayer.setProviderEncoding(u'UTF-8')
             vlayer.dataProvider().setEncoding(u'UTF-8')
             #vlayer.setOpacity(0.5)
@@ -3155,11 +3162,11 @@ class ZonesInfluenciaAdaptatives:
                     save_options.driverName = "ESRI Shapefile"
                     save_options.fileEncoding = "UTF-8"
                     transform_context = QgsProject.instance().transformContext()
-                    error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp",transform_context,save_options)
+                    error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Tematic_"+Tematic+".shp",transform_context,save_options)
                 else:
-                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Tematic_"+Tematic+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                 """Es carrega el Shape a l'entorn del QGIS"""
-                vlayer = QgsVectorLayer(os.environ['TMP']+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
+                vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Tematic_"+Tematic+".shp", titol3.decode('utf8'), "ogr")
                 vlayer.setProviderEncoding(u'UTF-8')
                 vlayer.dataProvider().setEncoding(u'UTF-8')
                 fieldname="Habitants"
@@ -3218,11 +3225,11 @@ class ZonesInfluenciaAdaptatives:
                     save_options.driverName = "ESRI Shapefile"
                     save_options.fileEncoding = "UTF-8"
                     transform_context = QgsProject.instance().transformContext()
-                    error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp",transform_context,save_options)
+                    error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp",transform_context,save_options)
                 else:
-                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                    error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
                 """Es carrega el Shape a l'entorn del QGIS"""
-                vlayer = QgsVectorLayer(os.environ['TMP']+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
+                vlayer = QgsVectorLayer(TEMPORARY_PATH+"/Graf_"+Graf+".shp", titol3.decode('utf8'), "ogr")
                 vlayer.setProviderEncoding(u'UTF-8')
                 vlayer.dataProvider().setEncoding(u'UTF-8')
                 try:
@@ -3293,11 +3300,11 @@ class ZonesInfluenciaAdaptatives:
                 save_options.driverName = "ESRI Shapefile"
                 save_options.fileEncoding = "UTF-8"
                 transform_context = QgsProject.instance().transformContext()
-                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp",transform_context,save_options)
+                error=QgsVectorFileWriter.writeAsVectorFormatV2(vlayer, TEMPORARY_PATH+"/EntitatPuntual_"+Cobertura+".shp",transform_context,save_options)
             else:
-                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
+                error=QgsVectorFileWriter.writeAsVectorFormat(vlayer, TEMPORARY_PATH+"/EntitatPuntual_"+Cobertura+".shp", "utf-8", vlayer.crs(), "ESRI Shapefile")
             """Es carrega el Shape a l'entorn del QGIS"""
-            vlayer = QgsVectorLayer(os.environ['TMP']+"/EntitatPuntual_"+Cobertura+".shp", titol3.decode('utf8'), "ogr")
+            vlayer = QgsVectorLayer(TEMPORARY_PATH+"/EntitatPuntual_"+Cobertura+".shp", titol3.decode('utf8'), "ogr")
             vlayer.setProviderEncoding(u'UTF-8')
             vlayer.dataProvider().setEncoding(u'UTF-8')
             symbols = vlayer.renderer().symbols(QgsRenderContext())
