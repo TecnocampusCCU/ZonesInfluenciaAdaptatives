@@ -1863,19 +1863,19 @@ class ZonesInfluenciaAdaptatives:
     def arxiusExisteixen(self, path):
         '''Aquesta funcio s'encarrega de comprovar que els arxius necessaris per a cada execució estiguin a la carpeta seleccio'''
         if self.dlg.bt_ILLES.isChecked():
-            if (os.path.exists(path + "\\tr_illes.csv")):
+            if (os.path.exists(path + "/tr_illes.csv")):
                 return True
             else:
                 QMessageBox.information(None, "ERROR 0: LECTURA DE LES ILLES", "No s'ha trobat l'arxiu de les illes.")
                 return False
         elif (self.dlg.bt_Parcel.isChecked()):
-            if (os.path.exists(path + "\\tr_parceles.csv") and os.path.exists(path + "\\tr_illes.csv")):
+            if (os.path.exists(path + "/tr_parceles.csv") and os.path.exists(path + "/tr_illes.csv")):
                 return True
             else:
                 QMessageBox.information(None, "ERROR 1: LECTURA DE LES PARCEL·LES", "No s'han trobat els arxius de illes ni parcel·les.")
                 return False
         else:
-            if (os.path.exists(path + "\\tr_npolicia.csv") and os.path.exists(path + "\\tr_illes.csv")):
+            if (os.path.exists(path + "/tr_npolicia.csv") and os.path.exists(path + "/tr_illes.csv")):
                 return True
             else:
                 QMessageBox.information(None, "ERROR 2: LECTURA DELS NÚMEROS DE POLICIA", "No s'han trobat els arxius de illes ni nÃºmeros de policia.")
@@ -2101,7 +2101,7 @@ class ZonesInfluenciaAdaptatives:
             if (path != ''):
                 if (self.arxiusExisteixen(path)):                
                     trobat = True                    
-                    arxiu = open(path + "\\tr_illes.csv", 'r')
+                    arxiu = open(path + "/tr_illes.csv", 'r')
                     dummy=arxiu.readline()
                     lines = arxiu.readlines()
                     try:
@@ -2135,7 +2135,7 @@ class ZonesInfluenciaAdaptatives:
                     if (self.dlg.bt_Parcel.isChecked()):
                         trobat = True 
                         
-                        arxiu = open(path + "\\tr_parceles.csv", 'r')
+                        arxiu = open(path + "/tr_parceles.csv", 'r')
                         dummy=arxiu.readline()
                         lines = arxiu.readlines()
                         try:
@@ -2172,7 +2172,7 @@ class ZonesInfluenciaAdaptatives:
                     if (self.dlg.bt_Portals.isChecked()):
                         trobat = True 
                         
-                        arxiu = open(path + "\\tr_npolicia.csv", 'r')
+                        arxiu = open(path + "/tr_npolicia.csv", 'r')
                         dummy=arxiu.readline()
                         lines = arxiu.readlines()
                         try:
