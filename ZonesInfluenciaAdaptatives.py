@@ -125,7 +125,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.210215"
+Versio_modul="V_Q3.210617"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -3041,7 +3041,7 @@ class ZonesInfluenciaAdaptatives:
         if vlayer.isValid():
             Cobertura=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
             """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+            if (qgis.utils.Qgis.QGIS_VERSION_INT>31000):
                 save_options = QgsVectorFileWriter.SaveVectorOptions()
                 save_options.driverName = "ESRI Shapefile"
                 save_options.fileEncoding = "UTF-8"
@@ -3157,7 +3157,7 @@ class ZonesInfluenciaAdaptatives:
             if vlayer.isValid():
                 Tematic=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
                 """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-                if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                if (qgis.utils.Qgis.QGIS_VERSION_INT>31000):
                     save_options = QgsVectorFileWriter.SaveVectorOptions()
                     save_options.driverName = "ESRI Shapefile"
                     save_options.fileEncoding = "UTF-8"
@@ -3220,7 +3220,7 @@ class ZonesInfluenciaAdaptatives:
             if vlayer.isValid():
                 Graf=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
                 """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-                if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+                if (qgis.utils.Qgis.QGIS_VERSION_INT>31000):
                     save_options = QgsVectorFileWriter.SaveVectorOptions()
                     save_options.driverName = "ESRI Shapefile"
                     save_options.fileEncoding = "UTF-8"
@@ -3295,7 +3295,7 @@ class ZonesInfluenciaAdaptatives:
         if vlayer.isValid():
             Cobertura=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
             """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31000):
+            if (qgis.utils.Qgis.QGIS_VERSION_INT>31000):
                 save_options = QgsVectorFileWriter.SaveVectorOptions()
                 save_options.driverName = "ESRI Shapefile"
                 save_options.fileEncoding = "UTF-8"
