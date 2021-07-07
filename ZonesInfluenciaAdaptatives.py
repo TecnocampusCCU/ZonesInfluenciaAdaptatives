@@ -101,7 +101,7 @@ from .resources import *
 from .ZonesInfluenciaAdaptatives_dialog import ZonesInfluenciaAdaptativesDialog
 import os.path
 from math import sqrt
-from macpath import curdir
+#from macpath import curdir
 
 """
 PART DE STREET VIEW
@@ -125,7 +125,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.210617"
+Versio_modul="V_Q3.210707"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -832,7 +832,7 @@ class ZonesInfluenciaAdaptatives:
             sql = "create local temp table \"Entitat_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
         else:
             sql = "create local temp table \"Entitat_Temp\" as select \"id\" AS \"id_orig\",\"id_0\" AS \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id_0\";"
-        
+        print(sql)
         cur.execute(sql)
         conn.commit()
         drop = "drop table if exists \"EntitatPuntual_Temp_"+Fitxer+"\";\n"
@@ -2234,14 +2234,17 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         try:
             self.barraEstat_processant()
+            print("0")
             self.on_click_Recalcular()
             drop="DROP TABLE IF EXISTS \"TaulaPunts_Temp\";\n"
             cur.execute(drop)
             conn.commit()
+            print("1")
             """Creació de la taula temporal TaulaPunts_Temp_(data) de la taula de punts + el camp virtual que s'ha d'afegir (cobertura)"""
             create = "create local temp table \"TaulaPunts_Temp\" AS SELECT * FROM \"EntitatPuntual_Temp_"+Fitxer+"\";"
             cur.execute(create)
             conn.commit()
+            print("2")
             alter = "ALTER TABLE  \"TaulaPunts_Temp\" ADD COLUMN \"Cobertura\" real NULL;"
             #ALTER TABLE "TaulaPunts_Temp_1" ADD COLUMN "Cobertura" real NULL;
             cur.execute(alter)
