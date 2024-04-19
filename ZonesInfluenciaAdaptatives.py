@@ -26,73 +26,22 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import *
 
 from PyQt5.QtGui import *
-from PyQt5.QtWidgets import QAction,QMessageBox,QTableWidgetItem,QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QInputDialog,QLineEdit,QColorDialog,QToolBar
-from qgis.core import QgsMapLayer
-from qgis.core import QgsDataSourceUri
-from qgis.core import QgsVectorLayer
-from qgis.core import QgsVectorFileWriter
-from qgis.core import QgsGraduatedSymbolRenderer
-from qgis.core import QgsCategorizedSymbolRenderer
-from qgis.core import QgsGradientColorRamp
-from qgis.core import QgsProject
-from qgis.core import QgsRendererRange
-from qgis.core import QgsSymbol
-from qgis.core import QgsFillSymbol
-from qgis.core import QgsLineSymbol
-from qgis.core import QgsSymbolLayerRegistry
-from qgis.core import QgsRandomColorRamp
-from qgis.core import QgsRendererRangeLabelFormat
-from qgis.core import QgsProject
-from qgis.core import QgsLayerTreeLayer
-from qgis.core import QgsRenderContext
-from qgis.core import QgsPalLayerSettings
-from qgis.core import QgsTextFormat
-from qgis.core import QgsTextBufferSettings
-from qgis.core import QgsVectorLayerSimpleLabeling
-from qgis.core import QgsProcessingFeedback, Qgis
-from qgis.core import QgsVectorLayerExporter
-from qgis.core import QgsWkbTypes
-from qgis.core import QgsUnitTypes
-from qgis.core import QgsFeature
-from qgis.core import QgsFeatureSink
-from qgis.core import QgsFeatureRequest
-from qgis.core import QgsGeometry
-from qgis.core import QgsGeometryUtils
-from qgis.core import QgsFields
-from qgis.core import QgsPointXY
-from qgis.core import QgsField
-from qgis.core import QgsProcessing
-from qgis.core import QgsProcessingParameters
-from qgis.core import QgsProcessingException
-from qgis.core import QgsProcessingParameterBoolean
-from qgis.core import QgsProcessingParameterDistance
-from qgis.core import QgsProcessingParameterEnum
-from qgis.core import QgsProcessingParameterPoint
-from qgis.core import QgsProcessingParameterField
-from qgis.core import QgsProcessingParameterNumber
-from qgis.core import QgsProcessingParameterString
-from qgis.core import QgsProcessingParameterFeatureSource
-from qgis.core import QgsProcessingParameterFeatureSink
-from qgis.core import QgsProcessingParameterDefinition
-from qgis.core import QgsProcessingAlgorithm
-from collections import OrderedDict
+from PyQt5.QtWidgets import QAction,QMessageBox,QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QColorDialog,QToolBar
+from qgis.core import QgsMapLayer, QgsDataSourceUri, QgsVectorLayer, QgsVectorFileWriter, QgsGraduatedSymbolRenderer, QgsGradientColorRamp, QgsProject, QgsFillSymbol, QgsRendererRangeLabelFormat, QgsLayerTreeLayer, QgsRenderContext, QgsProcessingFeedback, Qgis, QgsVectorLayerExporter, QgsWkbTypes, QgsUnitTypes, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsGeometryUtils, QgsPointXY, QgsField, QgsProcessingException
 from qgis.PyQt.QtCore import QVariant, QCoreApplication
 from qgis.analysis import QgsVectorLayerDirector
 from qgis.analysis import QgsNetworkDistanceStrategy
 from qgis.analysis import QgsNetworkSpeedStrategy
 from qgis.analysis import QgsGraphBuilder
 from qgis.analysis import QgsGraphAnalyzer
-from processing.algs.qgis.QgisAlgorithm import QgisAlgorithm
 from qgis.gui import QgsMessageBar
 import psycopg2
-import unicodedata
 import datetime
 import time
 import processing
 from processing.tools import dataobjects
 from qgis.utils import iface
 from PyQt5.QtSql import *
-import collections
 import qgis.utils
 
 # Initialize Qt resources from file resources.py
@@ -100,8 +49,6 @@ from .resources import *
 # Import the code for the dialog
 from .ZonesInfluenciaAdaptatives_dialog import ZonesInfluenciaAdaptativesDialog
 import os.path
-from math import sqrt
-#from macpath import curdir
 
 """
 PART DE STREET VIEW
@@ -125,7 +72,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.210707"
+Versio_modul="V_Q3.240419"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -144,6 +91,8 @@ pas_barra_iteracions=1
 icon_path=""
 clicked_esborra=0
 TEMPORARY_PATH=""
+
+versio_db = ""
         
 class ZonesInfluenciaAdaptatives:
     """QGIS Plugin Implementation."""
@@ -489,6 +438,8 @@ class ZonesInfluenciaAdaptatives:
         global schema
         global cur
         global conn
+        global versio_db
+        
         s = QSettings()
         self.dlg.combo_punts.clear()
         self.dlg.comboGraf.clear()
@@ -531,6 +482,94 @@ class ZonesInfluenciaAdaptatives:
                 self.ompleCombos(self.dlg.comboGraf, llista2, 'Selecciona una entitat', True)
                 self.dlg.Esborra_temp.setVisible(True) 
                 self.cerca_elements_Leyenda()
+
+                sql_versio = "select taula from config where variable = 'versio';"
+                cur.execute(sql_versio)
+                versio_db = cur.fetchone()[0]
+
+                if versio_db == '1.0':
+                    try:
+                        sql = "SELECT taula FROM config WHERE variable = 'parceles';"
+                        cur.execute(sql)
+                        parcel_name = cur.fetchone()[0]
+                        sql = "SELECT taula FROM config WHERE variable = 'illes';"
+                        cur.execute(sql)
+                        illes_name = cur.fetchone()[0]
+                        sql = "SELECT taula FROM config WHERE variable = 'portals';"
+                        cur.execute(sql)
+                        portals_name = cur.fetchone()[0]
+                        sql = "SELECT taula FROM config WHERE variable = 'xarxa';"
+                        cur.execute(sql)
+                        xarxa_name = cur.fetchone()[0]
+                    except:
+                        print("Error al llegir la configuració de la base de dades")
+                        QMessageBox.information(None, "Error", "Error al llegir la configuració de la base de dades")
+                        return
+                    try:
+                        cur.execute(f"""
+                                    DROP TABLE IF EXISTS parcel_temp;
+                                    CREATE TABLE parcel_temp (
+                                        id_parcel,
+                                        geom,
+                                        cadastral_reference
+                                    ) AS SELECT "id", "geom", "utm_total" FROM "{parcel_name}";
+                                    """)
+                        conn.commit()
+                        cur.execute(f"""
+                                    DROP TABLE IF EXISTS zone;
+                                    CREATE TABLE zone (
+                                        id_zone,
+                                        geom,
+                                        cadastral_zoning_reference
+                                    ) AS SELECT "id", "geom", "D_S_I" FROM "{illes_name}";
+                                    """)
+                        conn.commit()
+                        cur.execute(f"""
+                                    DROP TABLE IF EXISTS address;
+                                    CREATE TABLE address (
+                                        id_address,
+                                        geom,
+                                        cadastral_reference,
+                                        designator
+                                    ) AS SELECT id, geom, "REF_CADAST", "Carrer_Num_Bis" FROM "{portals_name}";
+                                    """)
+                        conn.commit()
+                        if self.dlg.CB_tramsUtils.isChecked():
+                            cur.execute(f"""
+                                        DROP TABLE IF EXISTS stretch;
+                                        CREATE TABLE stretch (
+                                            id,
+                                            cost,
+                                            reverse_cost,
+                                            semaphores,
+                                            total_cost_semaphore,
+                                            geom,
+                                            source,
+                                            target,
+                                            length,
+                                            direction,
+                                            slope_abs,
+                                            speed,
+                                            reverse_speed
+                                        ) AS SELECT "id", "cost", "reverse_cost", "Nombre_Semafors", "Cost_Total_Semafor_Tram", "the_geom", "source", "target", "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "{self.dlg.comboGraf.currentText()}";
+                                        """)
+                            conn.commit()
+                            cur.execute(f"""SELECT pgr_createTopology('stretch', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
+                            conn.commit()
+                    except:
+                        print("Error al crear les taules temporals")
+                        QMessageBox.information(None, "Error", "Error al crear les taules temporals")
+                        return
+                else:
+                    try:
+                        sql = "DROP TABLE IF EXISTS parcel_temp;\n"
+                        sql += "CREATE TABLE parcel_temp AS SELECT * FROM parcel;"
+                        cur.execute(sql)
+                        conn.commit()
+                    except:
+                        print("Error al crear la taula temporal")
+                        QMessageBox.information(None, "Error", "Error al crear la taula temporal")
+                        return
             except Exception as ex:
                 self.dlg.setEnabled(True)
                 print ("Error a la connexio")
@@ -587,7 +626,7 @@ class ZonesInfluenciaAdaptatives:
                     if (self.puntsValid(capa)):
                         pass
                     else:
-                        QMessageBox.information(None, "Error", 'La capa de punts seleccionada no és vàlida ja que no té o li falta algun dels camps següents:\n-"NPlaces"\n-"RadiInicial"\n-"id"\n')
+                        QMessageBox.information(None, "Error", 'La capa de punts seleccionada no és vàlida ja que no té o li falta algun dels camps següents:\n-"available_places"\n-"radius"\n-"id"\n')
         except Exception as ex:
             self.dlg.setEnabled(True)
             print ("Error Change_ComboPunts")
@@ -649,19 +688,19 @@ class ZonesInfluenciaAdaptatives:
         '''Aquesta funcio comprova si la taula de la capa de punts té els camps necessaris per fer els càlculs'''
         global cur
         global conn
-        campNPlaces = False
-        sql = "select exists (select * from information_schema.columns where table_schema = 'public' and table_name = '"+taula +"' and column_name = 'NPlaces');"
+        campavailable_places = False
+        sql = "select exists (select * from information_schema.columns where table_schema = 'public' and table_name = '"+taula +"' and column_name = 'available_places');"
         cur.execute(sql)
-        campNPlaces = cur.fetchall()
-        campRadiInicial = True
-        sql = "select exists (select * from information_schema.columns where table_schema = 'public' and table_name = '"+taula +"' and column_name = 'RadiInicial');"
+        campavailable_places = cur.fetchall()
+        campradius = True
+        sql = "select exists (select * from information_schema.columns where table_schema = 'public' and table_name = '"+taula +"' and column_name = 'radius');"
         cur.execute(sql)
-        campRadiInicial = cur.fetchall()
+        campradius = cur.fetchall()
         campID = True
         sql = "select exists (select * from information_schema.columns where table_schema = 'public' and table_name = '"+taula +"' and column_name = 'id');"
         cur.execute(sql)
         campID = cur.fetchall()
-        return campNPlaces[0][0] and campRadiInicial[0][0] and campID[0][0]
+        return campavailable_places[0][0] and campradius[0][0] and campID[0][0]
     
     def grafValid(self, taula):
         """Aquesta funció comprova si la taula que li hem passat té la seva capa de graf corresponent"""
@@ -688,7 +727,7 @@ class ZonesInfluenciaAdaptatives:
         predefInList = None
         for elem in list:
             try:
-                item = QStandardItem(unicode(elem))
+                item = QStandardItem(str(elem))
             except TypeError:
                 item = QStandardItem(str(elem))
             model.appendRow(item)
@@ -714,7 +753,7 @@ class ZonesInfluenciaAdaptatives:
         for elem in llista:
             try:
                 if isinstance(elem, tuple):
-                    item = QStandardItem(unicode(elem[0]))
+                    item = QStandardItem(str(elem[0]))
                 else:
                     item = QStandardItem(str(elem))
             except TypeError:
@@ -746,17 +785,17 @@ class ZonesInfluenciaAdaptatives:
         errors = self.controlEntitatLeyenda(L_capa) #retorna una llista amb aquells camps (id, geom, Nom) que no hi siguin.
 
         if len(errors) < 2:  # errors es una llista amb els camps que te la taula, si hi ha menys de 2, significa que falta algun camp.
-            ErrorMessage = "La capa de destí seleccionada no es valida, necessita els camps (id, Nom, NPlaces, RadiInicial). Li falten:\n"
+            ErrorMessage = "La capa de destí seleccionada no es valida, necessita els camps (id, Nom, available_places, radius). Li falten:\n"
             if "id" not in errors:
                 ErrorMessage+= '\n-"id"\n'
             #if "geom" not in errors:
             #    ErrorMessage+= '\n-"geom"\n'
             if "Nom" not in errors:
                 ErrorMessage+= '\n-"Nom"\n'
-            if "NPlaces" not in errors:
-                ErrorMessage+= '\n-"NPlaces"\n'
-            if "RadiInicial" not in errors:
-                ErrorMessage+= '\n-"RadiInicial"\n'
+            if "available_places" not in errors:
+                ErrorMessage+= '\n-"available_places"\n'
+            if "radius" not in errors:
+                ErrorMessage+= '\n-"radius"\n'
             
             QMessageBox.information(None, "Error", ErrorMessage+'\n')
             
@@ -806,12 +845,12 @@ class ZonesInfluenciaAdaptatives:
                         for each in layer.fields():
                             if each.name() == "id":
                                 list.append("id")
-                            elif each.name() == "NPlaces":
-                                list.append("NPlaces")
-                            elif each.name() == "RadiInicial":
-                                list.append("RadiInicial")
-                            elif each.name() == "Nom":
-                                list.append("Nom")
+                            elif each.name() == "available_places":
+                                list.append("available_places")
+                            elif each.name() == "radius":
+                                list.append("radius")
+                            elif each.name() == "name":
+                                list.append("name")
         return list   
     
     
@@ -829,9 +868,32 @@ class ZonesInfluenciaAdaptatives:
         cur.execute(drop)
         conn.commit()
         if self.dlg.tabWidget_Destino.currentIndex() == 0:
-            sql = "create local temp table \"Entitat_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
+            #sql = "create table \"Entitat_Temp\" as select \"id\",round(\"available_places\"/(select avg(\"available_places\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
+            sql = f"""
+            create local temp table \"Entitat_Temp\" AS
+            SELECT
+                \"id\",
+                ROUND(\"available_places\" / (
+                    SELECT AVG(\"available_places\")
+                    FROM \"{entitat}\"
+                ) * {radiFix}) AS \"NR\"
+            FROM \"{entitat}\"
+            GROUP BY \"id\";
+            """
         else:
-            sql = "create local temp table \"Entitat_Temp\" as select \"id\" AS \"id_orig\",\"id_0\" AS \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id_0\";"
+            #sql = "create table \"Entitat_Temp\" as select \"id\" AS \"id_orig\",\"id_0\" AS \"id\",round(\"available_places\"/(select avg(\"available_places\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id_0\";"
+            sql = f"""
+            create local temp table \"Entitat_Temp\" AS
+            SELECT
+                \"id\" AS \"id_orig\",
+                \"id_0\" AS \"id\",
+                ROUND(\"available_places\" / (
+                    SELECT AVG(\"available_places\")
+                    FROM \"{entitat}\"
+                ) * {radiFix}) AS \"NR\"
+            FROM \"{entitat}\"
+            GROUP BY \"id_0\";
+            """
         print(sql)
         cur.execute(sql)
         conn.commit()
@@ -839,13 +901,34 @@ class ZonesInfluenciaAdaptatives:
         cur.execute(drop)
         conn.commit()
         if self.dlg.tabWidget_Destino.currentIndex() == 0:
-            sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id\");\n"
+            #sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id\");\n"
+            sql = f"""
+            CREATE TABLE \"EntitatPuntual_Temp_{Fitxer}\" AS
+            SELECT
+                \"{entitat}\".*,
+                \"Entitat_Temp\".\"NR\"
+            FROM \"{entitat}\"
+            JOIN \"Entitat_Temp\" 
+                ON (\"{entitat}\".\"id\" = \"Entitat_Temp\".\"id\");
+            """
         else:
-            sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id_orig\");\n"
-        sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column if exists \"RadiInicial\";\n"
-        sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" rename column \"NR\" TO \"RadiInicial\";"
+            #sql="create table \"EntitatPuntual_Temp_"+Fitxer+"\"  as select \""+ entitat + "\".*,\"Entitat_Temp\".\"NR\" from \""+ entitat + "\" join \"Entitat_Temp\" on (\""+ entitat + "\".\"id\"=\"Entitat_Temp\".\"id_orig\");\n"
+            sql=f"""
+            CREATE TABLE \"EntitatPuntual_Temp_{Fitxer}\" AS
+            SELECT
+                \"{entitat}\".*,
+                \"Entitat_Temp\".\"NR\"
+            FROM \"{entitat}\"
+            JOIN \"Entitat_Temp\" 
+                ON (\"{entitat}\".\"id\" = \"Entitat_Temp\".\"id_orig\");
+            """
+        #sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column if exists \"radius\";\n"
+        #sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" rename column \"NR\" TO \"radius\";"
+        sql+=f"ALTER TABLE \"EntitatPuntual_Temp_{Fitxer}\" DROP COLUMN IF EXISTS \"radius\";\n"
+        sql+=f"ALTER TABLE \"EntitatPuntual_Temp_{Fitxer}\" RENAME COLUMN \"NR\" TO \"radius\";"
+
         #sql+="alter table \"EntitatPuntual_Temp_"+Fitxer+"\" drop column if exists \"id_orig\";\n"
-        #sql = "create local temp table \"EntitatPuntual_Temp\" as select \"id\",round(\"NPlaces\"/(select avg(\"NPlaces\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
+        #sql = "create table \"EntitatPuntual_Temp\" as select \"id\",round(\"available_places\"/(select avg(\"available_places\") from \""+ entitat + "\")*"+radiFix+") as \"NR\" from \""+ entitat + "\" group by \"id\";"
         cur.execute(sql)
         #print (sql)
         conn.commit()
@@ -875,12 +958,12 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
-        XarxaCarrers = self.dlg.comboGraf.currentText()
+        XarxaCarrers = 'stretch'
         sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
-        """ Es fa una copia de la taula que conté el graf i s'afegeixen els camps cost i reverse_cost en funció del que es necessiti, es crearà  taula local temporal per evitar problemes de concurrencia"""
-        sql_1+="CREATE local temp TABLE \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
+        """ Es fa una copia de la taula que conté el graf i s'afegeixen els camps cost i reverse_cost en funció del que es necessiti, es crearà taula local temporal per evitar problemes de concurrencia"""
+        sql_1+="create local temp table \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
         """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
-        sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"the_geom\"), \"reverse_cost\"=st_length(\"the_geom\");\n"
+        sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"geom\"), \"reverse_cost\"=st_length(\"geom\");\n"
         #print (sql_1)
         try:
             cur.execute(sql_1)
@@ -897,6 +980,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -927,6 +1011,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
             self.dlg.Progres.setVisible(False)
@@ -937,7 +1022,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1="drop table if exists punts_interes_tmp;\n"
         
         """Es crea la taula 'punts_interes_tmp' seleccionant el centroide de la entitat seleccionada utilitzant com a radi el valor del camp seleccionat"""
-        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") the_geom,tmp.\"id\"as pid,tmp.\""+camp_radi+"\" from ("+sql_buff+") tmp);\n"
+        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") geom,tmp.\"id\"as pid,tmp.\""+camp_radi+"\" from ("+sql_buff+") tmp);\n"
         
             
         #sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN pid BIGSERIAL PRIMARY KEY;\n"
@@ -963,6 +1048,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -978,9 +1064,9 @@ class ZonesInfluenciaAdaptatives:
 #       INICI ASSIGNACIO DEL VALOR DEL TRAM MES PROPER AL CAMP 'EDGE_ID' DE LA TAULA 'PUNTS_INTERES_TMP I LA PROJECCIO DEL PUNT D'INTERES SOBRE EL TRAM
 #       *****************************************************************************************************************
         """S'assigna el valor del tram més proper al punt d'interes en el camp 'edge_id' de la taula 'punts_interes_tmp'"""
-        sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.the_geom,Poi.the_geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.the_geom,Poi.the_geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
+        sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.geom,Poi.geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.geom,Poi.geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
         """Es calcula la fraccio del tram que on esta situat la projecció del punt d'interes"""
-        sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom),newPoint = ST_LineInterpolatePoint(e.the_geom, ST_LineLocatePoint(e.the_geom, \"punts_interes_tmp\".the_geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
+        sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom),newPoint = ST_LineInterpolatePoint(e.geom, ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -997,6 +1083,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1029,6 +1116,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1063,6 +1151,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1097,6 +1186,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1125,7 +1215,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI DE LA CREACIO DE LA TAULA 'TRAMS_FINALS_TMP' QUE CONTINDRA ELS TRAMS QUE FORMEN PART DEL RADI D'ACCIO INDICAT 
 #       *****************************************************************************************************************
         sql_1="DROP table IF EXISTS trams_finals_tmp;\n"
-        sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"the_geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,(\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")<=1 then (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\") when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"the_geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"the_geom\",1)=TRUE);\n"
+        sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,(\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")<=1 then (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\") when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -1142,6 +1232,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1164,20 +1255,20 @@ class ZonesInfluenciaAdaptatives:
         sql_1+="m trams_finals_tmp%rowtype;\n"
         sql_1+="BEGIN\n"
         sql_1+="DROP TABLE IF EXISTS fraccio_trams_raw;\n"
-        sql_1+="CREATE local temporary TABLE fraccio_trams_raw (the_geom geometry, punt_id bigint,id_tram bigint,fraccio FLOAT,node bigint,fraccio_inicial FLOAT,cost_invers FLOAT,cost_directe FLOAT,target bigint,radi_inic FLOAT);\n"
+        sql_1+="CREATE local temporary TABLE fraccio_trams_raw (geom geometry, punt_id bigint,id_tram bigint,fraccio FLOAT,node bigint,fraccio_inicial FLOAT,cost_invers FLOAT,cost_directe FLOAT,target bigint,radi_inic FLOAT);\n"
         sql_1+="FOR r IN SELECT \"trams_finals_tmp\".* FROM \"trams_finals_tmp\" WHERE \"trams_finals_tmp\".\"id\" not in (select \"edge_id\" from \"punts_interes_tmp\")\n"
         sql_1+="LOOP\n"
-        sql_1+="insert into fraccio_trams_raw VALUES(ST_Line_Substring((r.\"the_geom\"),"
-        sql_1+="case when (select ST_Line_Locate_Point((r.\"the_geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then 0 else 1-r.\"fraccio\"\n"
+        sql_1+="insert into fraccio_trams_raw VALUES(ST_LineSubstring((r.\"geom\"),"
+        sql_1+="case when (select ST_LineLocatePoint((r.\"geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then 0 else 1-r.\"fraccio\"\n"
         sql_1+="END,\n"
-        sql_1+="case when (select ST_Line_Locate_Point((r.\"the_geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then r.\"fraccio\" else 1\n"
+        sql_1+="case when (select ST_LineLocatePoint((r.\"geom\"),(select \"geo_punts_finals_tmp\".\"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=r.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=r.\"id_punt\")))<0.001 then r.\"fraccio\" else 1\n"
         sql_1+="END),r.\"id_punt\"*(-1),r.\"id\",0,r.\"node\",0,0,0,0);\n"
         sql_1+="RETURN NEXT r;\n"
         sql_1+="END LOOP;\n"
 
         sql_1+="FOR m IN SELECT \"trams_finals_tmp\".* FROM \"trams_finals_tmp\" WHERE \"trams_finals_tmp\".\"id\" in (select \"edge_id\" from \"punts_interes_tmp\")\n"
         sql_1+="LOOP\n"
-        sql_1+="insert into fraccio_trams_raw VALUES(m.\"the_geom\",m.\"id_punt\"*(-1),m.\"id\",0,m.\"node\",0,0,0);\n"
+        sql_1+="insert into fraccio_trams_raw VALUES(m.\"geom\",m.\"id_punt\"*(-1),m.\"id\",0,m.\"node\",0,0,0);\n"
 
         sql_1+="RETURN NEXT m;\n"
         sql_1+="END LOOP;\n"
@@ -1208,6 +1299,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1216,7 +1308,7 @@ class ZonesInfluenciaAdaptatives:
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             return "ERROR"
             
-        sql_1="SELECT \"the_geom\" FROM Cobertura();\n"
+        sql_1="SELECT \"geom\" FROM Cobertura();\n"
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1232,6 +1324,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1263,6 +1356,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1294,6 +1388,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1326,6 +1421,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1342,7 +1438,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CALCUL DE LA FRACCIO DE CADA TRAM FINAL 
 #       *****************************************************************************************************************
         """Calcul del la fracci� final de cada tram en el cas d'haber escollit distancia"""
-        cost_tram="ST_Length(\"fraccio_trams_raw\".\"the_geom\")"
+        cost_tram="ST_Length(\"fraccio_trams_raw\".\"geom\")"
         where_tram=""
         sql_1="UPDATE \"fraccio_trams_raw\" SET \"fraccio\"=" 
         """ Si el radi es fix"""
@@ -1366,6 +1462,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1382,15 +1479,15 @@ class ZonesInfluenciaAdaptatives:
 #       INICI MODIFICACIO DE LA GEOMETRIA DELS TRAMS FINALS SEGONS LA FRACCIO CALCULADA 
 #       *****************************************************************************************************************
         """Es modifiquen els trams finals del trajecte segons el que falti per arribar al cost desitjat"""
-        sql_1="update \"fraccio_trams_raw\" set \"the_geom\"=final.\"the_geom\"" 
+        sql_1="update \"fraccio_trams_raw\" set \"geom\"=final.\"geom\"" 
         sql_1+="from"
-        sql_1+="(select distinct(ST_Line_Substring("
-        sql_1+="(m.\"the_geom\")"
+        sql_1+="(select distinct(ST_LineSubstring("
+        sql_1+="(m.\"geom\")"
         sql_1+=","
-        sql_1+="(case when (select ST_Line_Locate_Point((m.\"the_geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then 0 else 1-m.\"fraccio\" END)"
+        sql_1+="(case when (select ST_LineLocatePoint((m.\"geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then 0 else 1-m.\"fraccio\" END)"
         sql_1+=","
-        sql_1+="(case when (select ST_Line_Locate_Point((m.\"the_geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then m.\"fraccio\" else 1 END)"
-        sql_1+="))  the_geom"
+        sql_1+="(case when (select ST_LineLocatePoint((m.\"geom\"),(select \"the_geom\" from \"geo_punts_finals_tmp\" where \"geo_punts_finals_tmp\".\"id\"=m.\"node\" and \"geo_punts_finals_tmp\".\"start_vid\"=m.\"punt_id\"*-1)))<0.01 then m.\"fraccio\" else 1 END)"
+        sql_1+="))  geom"
         sql_1+=","
         sql_1+="m.\"id_tram\""
         sql_1+="from \"fraccio_trams_raw\" m "
@@ -1414,6 +1511,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1429,7 +1527,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI INSERTAR ELS TRAMS INICIALS DELS QUE PARTIRA EL GRAF 
 #       *****************************************************************************************************************
         """S'afegeixen els trams inicials de cada graf per modificarlos posteriorment"""
-        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"the_geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",\"pid\",\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
+        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",\"pid\",\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
         #print sql_1
         try:
             cur.execute(sql_1)
@@ -1446,6 +1544,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1481,6 +1580,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1489,13 +1589,13 @@ class ZonesInfluenciaAdaptatives:
             self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
             return "ERROR"
     
-        cost_tram="ST_Length(SXI.\"the_geom\")"
-        sql_1="UPDATE \"fraccio_trams_raw\" set \"the_geom\"=final.\"the_geom\" from (select ST_Line_Substring((SXI.\"the_geom\"),"
+        cost_tram="ST_Length(SXI.\"geom\")"
+        sql_1="UPDATE \"fraccio_trams_raw\" set \"geom\"=final.\"geom\" from (select ST_LineSubstring((SXI.\"geom\"),"
         sql_1+="(case when (FT.\"fraccio_inicial\"-(FT.\"radi_inic\"/"+cost_tram+"))>0 then (FT.\"fraccio_inicial\"-(FT.\"radi_inic\"/"+cost_tram+")) else 0 end)"
         sql_1+=","
         sql_1+="(case when (FT.\"fraccio_inicial\"+(FT.\"radi_inic\"/"+cost_tram+"))<1 then (FT.\"fraccio_inicial\"+(FT.\"radi_inic\"/"+cost_tram+")) else 1 end)"
-        sql_1+=") as the_geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
-        sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"the_geom\" as the_geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
+        sql_1+=") as geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
+        sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
         sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
             
         
@@ -1514,6 +1614,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1532,7 +1633,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1="DROP TABLE IF EXISTS fraccio_trams_tmp;\n"
 
         """Eliminació de trams duplicats"""
-        sql_1+="CREATE local temporary TABLE fraccio_trams_tmp AS (select distinct(the_geom),punt_id,radi_inic from fraccio_trams_raw);\n"
+        sql_1+="CREATE local temporary TABLE fraccio_trams_tmp AS (select distinct(geom),punt_id,radi_inic from fraccio_trams_raw);\n"
         
         try:
             cur.execute(sql_1)
@@ -1549,6 +1650,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1565,13 +1667,13 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         """ Es fa la unió de tots els trams des del servidor POSTGRES dins de la taula Graf_utilitzat_(data)"""
         sql_1="drop table if exists \"graf_utilitzat_"+Fitxer+"\";\n"
-        sql_1+="create table \"graf_utilitzat_"+Fitxer+"\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (select the_geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
+        sql_1+="create table \"graf_utilitzat_"+Fitxer+"\" AS (Select ST_Union(TOT.geom) geom, TOT.\"punt_id\" from (select geom,punt_id,radi_inic from fraccio_trams_tmp) TOT group by TOT.\"punt_id\");\n"
         try:
             cur.execute(sql_1)
             conn.commit()
         except Exception as ex:
             self.dlg.setEnabled(True)
-            missatge="Error al crear la taula temporal graf_utilitzat_"+fitxer
+            missatge="Error al crear la taula temporal graf_utilitzat_"+Fitxer
             print (missatge)
             
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -1581,6 +1683,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1596,7 +1699,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CREACIO TAULA BUFFER_FINAL_(DATA) QUE CONTINDRA EL BUFFER DE LA UNIO DELS TRAMS 
 #       *****************************************************************************************************************
         sql_1+="drop table if exists \"buffer_final\";\n"
-        sql_1+="create local temp table \"buffer_final\" AS (Select ST_Union(TOT.the_geom) the_geom, TOT.\"punt_id\" from (Select ST_Buffer(the_geom,"+self.dlg.txt_radi.text()+") the_geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
+        sql_1+="create table \"buffer_final\" AS (Select ST_Union(TOT.geom) geom, TOT.\"punt_id\" from (Select ST_Buffer(geom,"+self.dlg.txt_radi.text()+") geom,punt_id from fraccio_trams_tmp)TOT group by TOT.\"punt_id\");\n"
             
         try:
             cur.execute(sql_1)
@@ -1613,6 +1716,7 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", missatge)
             conn.rollback()
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             self.bar.clearWidgets()
             self.dlg.Progres.setValue(0)
@@ -1644,7 +1748,7 @@ class ZonesInfluenciaAdaptatives:
         QApplication.processEvents()
         punts_lyr = QgsVectorLayer(uri2.uri(False), "punts", "postgres")
         QApplication.processEvents()
-        uri2.setDataSource("","("+sql_xarxa+")","the_geom","","id")
+        uri2.setDataSource("","("+sql_xarxa+")","geom","","id")
         QApplication.processEvents()
         network_lyr = QgsVectorLayer(uri2.uri(False), "xarxa", "postgres")
         QApplication.processEvents()
@@ -1863,23 +1967,44 @@ class ZonesInfluenciaAdaptatives:
     def arxiusExisteixen(self, path):
         '''Aquesta funcio s'encarrega de comprovar que els arxius necessaris per a cada execució estiguin a la carpeta seleccio'''
         if self.dlg.bt_ILLES.isChecked():
-            if (os.path.exists(path + "/tr_illes.csv")):
-                return True
+            if versio_db == '1.0':
+                if (os.path.exists(path + "/tr_illes_v1.csv")):
+                    return True
+                else:
+                    QMessageBox.information(None, "ERROR 0: LECTURA DE LES ILLES", "No s'ha trobat l'arxiu de les illes.")
+                    return False
             else:
-                QMessageBox.information(None, "ERROR 0: LECTURA DE LES ILLES", "No s'ha trobat l'arxiu de les illes.")
-                return False
+                if (os.path.exists(path + "/tr_illes_v2.csv")):
+                    return True
+                else:
+                    QMessageBox.information(None, "ERROR 0: LECTURA DE LES ILLES", "No s'ha trobat l'arxiu de les illes.")
+                    return False
         elif (self.dlg.bt_Parcel.isChecked()):
-            if (os.path.exists(path + "/tr_parceles.csv") and os.path.exists(path + "/tr_illes.csv")):
-                return True
+            if versio_db == '1.0':
+                if (os.path.exists(path + "/tr_parceles_v1.csv") and os.path.exists(path + "/tr_illes_v1.csv")):
+                    return True
+                else:
+                    QMessageBox.information(None, "ERROR 1: LECTURA DE LES PARCEL·LES", "No s'han trobat els arxius de illes ni parcel·les.")
+                    return False
             else:
-                QMessageBox.information(None, "ERROR 1: LECTURA DE LES PARCEL·LES", "No s'han trobat els arxius de illes ni parcel·les.")
-                return False
+                if (os.path.exists(path + "/tr_parceles_v2.csv") and os.path.exists(path + "/tr_illes_v2.csv")):
+                    return True
+                else:
+                    QMessageBox.information(None, "ERROR 1: LECTURA DE LES PARCEL·LES", "No s'han trobat els arxius de illes ni parcel·les.")
+                    return False
         else:
-            if (os.path.exists(path + "/tr_npolicia.csv") and os.path.exists(path + "/tr_illes.csv")):
-                return True
+            if versio_db == '1.0':
+                if (os.path.exists(path + "/tr_npolicia_v1.csv") and os.path.exists(path + "/tr_illes_v1.csv")):
+                    return True
+                else:
+                    QMessageBox.information(None, "ERROR 2: LECTURA DELS NÚMEROS DE POLICIA", "No s'han trobat els arxius de illes ni nÃºmeros de policia.")
+                    return False
             else:
-                QMessageBox.information(None, "ERROR 2: LECTURA DELS NÚMEROS DE POLICIA", "No s'han trobat els arxius de illes ni nÃºmeros de policia.")
-                return False
+                if (os.path.exists(path + "/tr_npolicia_v2.csv") and os.path.exists(path + "/tr_illes_v2.csv")):
+                    return True
+                else:
+                    QMessageBox.information(None, "ERROR 2: LECTURA DELS NÚMEROS DE POLICIA", "No s'han trobat els arxius de illes ni nÃºmeros de policia.")
+                    return False
 
 
 
@@ -1925,6 +2050,8 @@ class ZonesInfluenciaAdaptatives:
         global geometria
         global pas_barra_iteracions
         global TEMPORARY_PATH
+
+        global versio_db
         
         self.dlg.setEnabled(False)
         Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
@@ -1977,17 +2104,18 @@ class ZonesInfluenciaAdaptatives:
                 for layer in layers:
                     if layer.name() == self.dlg.comboLeyenda.currentText():
                         try:
-                            sql_SRID="SELECT Find_SRID('public', 'ILLES', 'geom')"
+                            sql_SRID="SELECT Find_SRID('public', 'zone', 'geom')"
                             cur.execute(sql_SRID)
                         except Exception as ex:
                             self.dlg.setEnabled(True)
-                            print ("ERROR SELECT SRID ILLES")
+                            print ("ERROR SELECT SRID zone")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
                             print (message)
-                            QMessageBox.information(None, "Error", "ERROR SELECT SRID ILLES")
+                            QMessageBox.information(None, "Error", "ERROR SELECT SRID zone")
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.eliminaTaulesTemporals()
                 
                             self.bar.clearWidgets()
                             self.dlg.Progres.setValue(0)
@@ -2016,6 +2144,7 @@ class ZonesInfluenciaAdaptatives:
                             QMessageBox.information(None, "Error", "ERROR SELECT SRID")
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.eliminaTaulesTemporals()
                 
                             self.bar.clearWidgets()
                             self.dlg.Progres.setValue(0)
@@ -2039,6 +2168,7 @@ class ZonesInfluenciaAdaptatives:
                             QMessageBox.information(None, "Error", "ALTER TABLE ERROR_geometry")
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.eliminaTaulesTemporals()
                 
                             self.bar.clearWidgets()
                             self.dlg.Progres.setValue(0)
@@ -2060,6 +2190,7 @@ class ZonesInfluenciaAdaptatives:
                                 QMessageBox.information(None, "Error", ErrorMessage+'\n')
                                 conn.rollback()
                                 self.eliminaTaulesCalcul(Fitxer)
+                                self.eliminaTaulesTemporals()
                     
                                 self.bar.clearWidgets()
                                 self.dlg.Progres.setValue(0)
@@ -2074,9 +2205,10 @@ class ZonesInfluenciaAdaptatives:
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
                             print (message)
-                            QMessageBox.information(None, "Error", errorMessage)
+                            QMessageBox.information(None, "Error", message)
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.eliminaTaulesTemporals()
                 
                             self.bar.clearWidgets()
                             self.dlg.Progres.setValue(0)
@@ -2101,7 +2233,10 @@ class ZonesInfluenciaAdaptatives:
             if (path != ''):
                 if (self.arxiusExisteixen(path)):                
                     trobat = True                    
-                    arxiu = open(path + "/tr_illes.csv", 'r')
+                    if versio_db == '1.0':
+                        arxiu = open(path + "/tr_illes_v1.csv", 'r')
+                    else:
+                        arxiu = open(path + "/tr_illes_v2.csv", 'r')
                     dummy=arxiu.readline()
                     lines = arxiu.readlines()
                     try:
@@ -2109,7 +2244,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(drop)
                         conn.commit()
                         """Creació de la taula temporal Illes_resum_(data) de les dades del CSV de la taula resum d'illes"""
-                        cur.execute("CREATE local temp TABLE \"Illes_Resum\" (\"ILLES_Codificades\" varchar(20), \"Habitants\" numeric);")
+                        cur.execute("create local temp table \"Illes_Resum\" (\"ILLES_Codificades\" varchar(20), \"Habitants\" numeric);")
                         conn.commit()
                         insert=""
                         for linia in lines:
@@ -2126,6 +2261,7 @@ class ZonesInfluenciaAdaptatives:
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "I am unable to connect to the database")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
                         return
                     
                     
@@ -2134,8 +2270,10 @@ class ZonesInfluenciaAdaptatives:
     
                     if (self.dlg.bt_Parcel.isChecked()):
                         trobat = True 
-                        
-                        arxiu = open(path + "/tr_parceles.csv", 'r')
+                        if versio_db == '1.0':
+                            arxiu = open(path + "/tr_parceles_v1.csv", 'r')
+                        else:
+                            arxiu = open(path + "/tr_parceles_v2.csv", 'r')
                         dummy=arxiu.readline()
                         lines = arxiu.readlines()
                         try:
@@ -2144,7 +2282,7 @@ class ZonesInfluenciaAdaptatives:
                             conn.commit()
                             self.barraEstat_llegint()
                             """Creació de la taula temporal Resum_Temp_(data) de les dades del CSV de la taula resum de parceles"""
-                            cur.execute("CREATE local temp TABLE \"Parcel_Resum\" (\"Parcela\" varchar(20), \"Habitants\" numeric);")
+                            cur.execute("create local temp table \"Parcel_Resum\" (\"Parcela\" varchar(20), \"Habitants\" numeric);")
                             conn.commit()
                             insert=""
                             for linia in lines:
@@ -2162,6 +2300,7 @@ class ZonesInfluenciaAdaptatives:
                             self.barraEstat_Error()
                             QMessageBox.information(None, "Error", "I am unable to connect to the database")
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.eliminaTaulesTemporals()
                 
                             return
                         
@@ -2171,8 +2310,10 @@ class ZonesInfluenciaAdaptatives:
             
                     if (self.dlg.bt_Portals.isChecked()):
                         trobat = True 
-                        
-                        arxiu = open(path + "/tr_npolicia.csv", 'r')
+                        if versio_db == '1.0':
+                            arxiu = open(path + "/tr_npolicia_v1.csv", 'r')
+                        else:
+                            arxiu = open(path + "/tr_npolicia_v2.csv", 'r')
                         dummy=arxiu.readline()
                         lines = arxiu.readlines()
                         try:
@@ -2181,7 +2322,7 @@ class ZonesInfluenciaAdaptatives:
                             conn.commit()
                             self.barraEstat_llegint()
                             """Creació de la taula temporal Resum_Temp_(data) de les dades del CSV de la taula resum de portals"""
-                            cur.execute("CREATE local temp TABLE \"NPolicia_Resum\" (\"NPolicia\" varchar(20), \"Habitants\" numeric);")
+                            cur.execute("create local temp table \"NPolicia_Resum\" (\"NPolicia\" varchar(20), \"Habitants\" numeric);")
                             conn.commit()
                             insert=""
                             for linia in lines:
@@ -2199,6 +2340,7 @@ class ZonesInfluenciaAdaptatives:
                             self.barraEstat_Error()
                             QMessageBox.information(None, "Error", "I am unable to connect to the database")
                             self.eliminaTaulesCalcul(Fitxer)
+                            self.eliminaTaulesTemporals()
                 
                             return
                         
@@ -2264,6 +2406,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "I am unable to create the table")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -2273,7 +2416,7 @@ class ZonesInfluenciaAdaptatives:
         taula = ""
         
         try:      
-            create = "create table \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" AS select \"id\", \"D_S_I\", \"Habitants\", \"geom\" from \"Illes_Resum\", \"ILLES\" where \"ILLES_Codificades\" = \"D_S_I\";"
+            create = "create local temp table \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" AS select \"id_zone\", \"cadastral_zoning_reference\", \"Habitants\", \"geom\" from \"Illes_Resum\", \"zone\" where \"ILLES_Codificades\" = \"cadastral_zoning_reference\";"
             cur.execute(create)
             taula = "\"JoinIlles_Habitants_Temp_"+ Fitxer + "\""
             conn.commit()
@@ -2286,6 +2429,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "no s'ha creat illes")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -2295,7 +2439,7 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(drop)
                 conn.commit()
                 #select "Parcela","geom", "Habitants"  from "ResumParcela", "parcel" where "Parcela" = "UTM";
-                create = "create local temp table \"JoinParcel_Habitants_Temp\" AS select \"id\",\"Parcela\",\"geom\", \"Habitants\" from \"Parcel_Resum\", \"parcel\" where \"Parcela\" = \"UTM\";"
+                create = "create local temp table \"JoinParcel_Habitants_Temp\" AS select \"id_parcel\",\"Parcela\",\"geom\", \"Habitants\" from \"Parcel_Resum\", \"parcel_temp\" where \"Parcela\" = \"cadastral_reference\";"
                 cur.execute(create)
                 taula = "\"JoinParcel_Habitants_Temp\""
                 conn.commit()
@@ -2308,6 +2452,7 @@ class ZonesInfluenciaAdaptatives:
                 self.barraEstat_Error()
                 QMessageBox.information(None, "Error", "no s'ha creat parcel")
                 self.eliminaTaulesCalcul(Fitxer)
+                self.eliminaTaulesTemporals()
     
                 return
                 
@@ -2318,7 +2463,7 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(drop)
                 conn.commit()
                 #select * from "ResumNPolicia", "dintreilla" where "NPolicia" = "Carrer_Num_Bis";
-                create = "create local temp table \"JoinNPol_Habitants_Temp\" AS select \"id\",\"NPolicia\",\"geom\", \"Habitants\" from \"NPolicia_Resum\", \"dintreilla\" where \"NPolicia\" = \"Carrer_Num_Bis\";"
+                create = "create local temp table \"JoinNPol_Habitants_Temp\" AS select \"id_address\",\"NPolicia\",\"geom\", \"Habitants\" from \"NPolicia_Resum\", \"address\" where \"NPolicia\" = \"designator\";"
                 cur.execute(create)
                 taula = "\"JoinNPol_Habitants_Temp\""
                 conn.commit()
@@ -2331,6 +2476,7 @@ class ZonesInfluenciaAdaptatives:
                 self.barraEstat_Error()
                 QMessageBox.information(None, "Error", "no s'ha creat npolicia")
                 self.eliminaTaulesCalcul(Fitxer)
+                self.eliminaTaulesTemporals()
     
                 return
                 
@@ -2365,23 +2511,25 @@ class ZonesInfluenciaAdaptatives:
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Error a la connexio")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                         
                         
-                    selectRadi = "SELECT DISTINCT \"RadiInicial\" FROM \"EntitatPuntual_Temp_"+Fitxer+"\""
+                    selectRadi = "SELECT DISTINCT \"radius\" FROM \"EntitatPuntual_Temp_"+Fitxer+"\""
                     try:
                         cur.execute(selectRadi)
                         radi = cur.fetchone()
                     except Exception as ex:
                         self.dlg.setEnabled(True)
-                        print ("Error SELECT RadiInicial")
+                        print ("Error SELECT radius")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
                         print (message)
                         self.barraEstat_Error()
-                        QMessageBox.information(None, "Error", "Error SELECT RadiInicial")
+                        QMessageBox.information(None, "Error", "Error SELECT radius")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                     sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
@@ -2403,27 +2551,28 @@ class ZonesInfluenciaAdaptatives:
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Error DROP buffer_final")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                     
-                    error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                    error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                     if error[0] != 0:
                         iface.messageBar().pushMessage(u'Error', error[1])
                         
-                    #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                    #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                     #if error[0] != 0:
                     #    iface.messageBar().pushMessage(u'Error', error[1])
                         
                     taula_buffer="buffer_final_"+Fitxer   
-                    create = "create table \"AgrupacioRadiFix_Temp\" AS select \"the_geom\", \"geom\", \"TaulaPunts_Temp\".\"id\",\"TaulaPunts_Temp\".\"NPlaces\",\"TaulaPunts_Temp\".\"RadiInicial\",\"TaulaPunts_Temp\".\"Cobertura\" from \"" + taula_buffer + "\" join \"TaulaPunts_Temp\" on (\"" + taula_buffer + "\".\"id\" = \"TaulaPunts_Temp\".\"id\");"     
+                    create = "create local temp table \"AgrupacioRadiFix_Temp\" AS select \"" + taula_buffer + "\".\"geom\" AS \"the_geom\", \"TaulaPunts_Temp\".\"geom\", \"TaulaPunts_Temp\".\"id\",\"TaulaPunts_Temp\".\"available_places\",\"TaulaPunts_Temp\".\"radius\",\"TaulaPunts_Temp\".\"Cobertura\" from \"" + taula_buffer + "\" join \"TaulaPunts_Temp\" on (\"" + taula_buffer + "\".\"id\" = \"TaulaPunts_Temp\".\"id\");"     
                 
                 else:
-                    taula_buffer=self.calcul_graf(sql_total, "RadiInicial")
+                    taula_buffer=self.calcul_graf(sql_total, "radius")
                     if taula_buffer=="ERROR":
                         self.dlg.setEnabled(True)
                         return
                     
-                    create = "create local temp table \"AgrupacioRadiFix_Temp\" AS select \"the_geom\", \"geom\", \"id\",\"NPlaces\",\"RadiInicial\",\"Cobertura\" from \"" + taula_buffer + "\" join \"TaulaPunts_Temp\" on (\"" + taula_buffer + "\".\"punt_id\" = \"TaulaPunts_Temp\".\"id\");"
+                    create = "create local temp table \"AgrupacioRadiFix_Temp\" AS select \"" + taula_buffer + "\".\"geom\" AS \"the_geom\", \"TaulaPunts_Temp\".\"geom\", \"id\",\"available_places\",\"radius\",\"Cobertura\" from \"" + taula_buffer + "\" join \"TaulaPunts_Temp\" on (\"" + taula_buffer + "\".\"punt_id\" = \"TaulaPunts_Temp\".\"id\");"
                     
         #       *****************************************************************************************************************
         #       FI CALCUL DEL GRAF I DEL BUFFER DELS TRAMS CALCULATS 
@@ -2431,12 +2580,12 @@ class ZonesInfluenciaAdaptatives:
                 
                 #â˜¼print create
             else:
-                create = "create local temp table \"AgrupacioRadiFix_Temp\" AS Select ST_Buffer(\"geom\",\"TaulaPunts_Temp\".\"RadiInicial\"::double precision,100) \"the_geom\",\"id\",\"geom\",\"NPlaces\",\"RadiInicial\",\"Cobertura\" from \"TaulaPunts_Temp\";"
+                create = "create local temp table \"AgrupacioRadiFix_Temp\" AS Select ST_Buffer(\"geom\",\"TaulaPunts_Temp\".\"radius\"::double precision,100) \"the_geom\",\"id\",\"geom\",\"available_places\",\"radius\",\"Cobertura\" from \"TaulaPunts_Temp\";"
             cur.execute(create)
             conn.commit()
     
             alter = "alter table \"AgrupacioRadiFix_Temp\" add column \"radi\" integer;\n"
-            alter += "UPDATE \"AgrupacioRadiFix_Temp\" SET \"radi\" = \"RadiInicial\"::integer;"
+            alter += "UPDATE \"AgrupacioRadiFix_Temp\" SET \"radi\" = \"radius\"::integer;"
             cur.execute(alter)
             conn.commit()
             
@@ -2449,6 +2598,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "no s'ha creat l'agrupacio")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -2467,19 +2617,20 @@ class ZonesInfluenciaAdaptatives:
                     drop="DROP TABLE IF EXISTS \"AgregacioSumaHab_Temp_"+Fitxer+"\";\n"
                     cur.execute(drop)
                     conn.commit()
-                    create = "create table \"AgregacioSumaHab_Temp_"+Fitxer+"\" AS select \"AgrupacioRadiFix_Temp\".\"id\", \"AgrupacioRadiFix_Temp\".\"geom\",\"radi\",\"NPlaces\",\"Cobertura\", sum(\"Habitants\") as \"Habitants\" from \"AgrupacioRadiFix_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgrupacioRadiFix_Temp\".\"the_geom\") group by \"AgrupacioRadiFix_Temp\".\"geom\", \"AgrupacioRadiFix_Temp\".\"id\", \"radi\",\"NPlaces\",\"Cobertura\";"
+                    create = "create table \"AgregacioSumaHab_Temp_"+Fitxer+"\" AS select \"AgrupacioRadiFix_Temp\".\"id\", \"AgrupacioRadiFix_Temp\".\"geom\",\"radi\",\"available_places\",\"Cobertura\", sum(\"Habitants\") as \"Habitants\" from \"AgrupacioRadiFix_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgrupacioRadiFix_Temp\".\"the_geom\") group by \"AgrupacioRadiFix_Temp\".\"geom\", \"AgrupacioRadiFix_Temp\".\"id\", \"radi\",\"available_places\",\"Cobertura\";"
                     #print create
                     cur.execute(create)
                     conn.commit()  
                 except Exception as ex:
                     self.dlg.setEnabled(True)
-                    print ("no s'ha creat l'agregacio")
+                    print ("no s'ha creat l'agregacio 1")
                     template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                     message = template.format(type(ex).__name__, ex.args)
                     print (message)
                     self.barraEstat_Error()
                     QMessageBox.information(None, "Error", "no s'ha creat l'agregacio")
                     self.eliminaTaulesCalcul(Fitxer)
+                    self.eliminaTaulesTemporals()
         
                     return
                     
@@ -2489,7 +2640,7 @@ class ZonesInfluenciaAdaptatives:
                 if self.dlg.CB_tramsUtils.isChecked():
                     try:
                         alter = "alter table \"AgregacioSumaHab_Temp_"+Fitxer+"\" add column \"nouradi\" integer;\n"
-                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\")))))::integer;"
+                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"available_places\"/(\"Habitants\"*\"Cobertura\")))))::integer;"
                         cur.execute(alter)
                         conn.commit()
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
@@ -2513,6 +2664,7 @@ class ZonesInfluenciaAdaptatives:
                                 self.barraEstat_Error()
                                 QMessageBox.information(None, "Error", "Error a la connexio")
                                 self.eliminaTaulesCalcul(Fitxer)
+                                self.eliminaTaulesTemporals()
                     
                                 return
                                 
@@ -2531,35 +2683,36 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(sql_1)
                             conn.commit()
                             
-                            error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                            error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                             if error[0] != 0:
                                 iface.messageBar().pushMessage(u'Error', error[1])
                                 
-                            #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                            #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                             #if error[0] != 0:
                             #    iface.messageBar().pushMessage(u'Error', error[1])
                                 
                             taula_buffer="buffer_final_"+Fitxer
-                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"radi\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"NPlaces\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Cobertura\", \"" + taula_buffer + "\".\"the_geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"     
+                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"radi\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"available_places\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Cobertura\", \"" + taula_buffer + "\".\"geom\" AS the_geom, \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"     
                         else:
                             taula_buffer=self.calcul_graf(sql_total,"nouradi")
                             if taula_buffer=="ERROR":
                                 self.dlg.setEnabled(True)
                                 return
                             
-                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", \"the_geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
+                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"Cobertura\", \""+taula_buffer+"\".\"geom\" AS \"the_geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
                             #print create
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
                         self.dlg.setEnabled(True)
-                        print ("Agregacio nou radi no feta")
+                        print ("Agregacio nou radi no feta 1")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
                         print (message)
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Agregacio nou radi no feta")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                         
@@ -2571,7 +2724,7 @@ class ZonesInfluenciaAdaptatives:
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
                         cur.execute(drop)
                         conn.commit()                    
-                        create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
+                        create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"available_places\"/(\"Habitants\"*\"Cobertura\"))))),100) the_geom, round((\"radi\"*sqrt((\"available_places\"/(\"Habitants\"*\"Cobertura\"))))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                         #print create
                         cur.execute(create)
                         conn.commit()
@@ -2579,13 +2732,14 @@ class ZonesInfluenciaAdaptatives:
                         QApplication.processEvents()
                     except Exception as ex:
                         self.dlg.setEnabled(True)
-                        print ("Agregacio nou radi no feta")
+                        print ("Agregacio nou radi no feta 2")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
                         print (message)
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Agregacio nou radi no feta")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                         
@@ -2596,7 +2750,7 @@ class ZonesInfluenciaAdaptatives:
                     drop = "DROP TABLE IF EXISTS \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                     cur.execute(drop)
                     conn.commit()
-                    create = "CREATE TABLE \"AgregacioSumaHab_Temp_"+Fitxer+"\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"NPlaces\",\"Cobertura\", sum("+taula+".\"Habitants\") as \"Habitants\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"NPlaces\",\"Cobertura\";"
+                    create = "CREATE TABLE \"AgregacioSumaHab_Temp_"+Fitxer+"\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"available_places\",\"Cobertura\", sum("+taula+".\"Habitants\") as \"Habitants\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"available_places\",\"Cobertura\";"
                     #print create
                     cur.execute(create)
                     conn.commit() 
@@ -2611,6 +2765,7 @@ class ZonesInfluenciaAdaptatives:
                     self.barraEstat_Error()
                     QMessageBox.information(None, "Error", "No s'ha pogut realitzar la tasca")
                     self.eliminaTaulesCalcul(Fitxer)
+                    self.eliminaTaulesTemporals()
         
                     return
                     
@@ -2618,7 +2773,7 @@ class ZonesInfluenciaAdaptatives:
                 if self.dlg.CB_tramsUtils.isChecked():
                     try:
                         alter = "alter table \"AgregacioSumaHab_Temp_"+Fitxer+"\" add column \"nouradi\" integer;\n"
-                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\")))))::integer;"
+                        alter += "UPDATE \"AgregacioSumaHab_Temp_"+Fitxer+"\" SET \"nouradi\" = round((\"radi\"*sqrt((\"available_places\"/(\"Habitants\"*\"Cobertura\")))))::integer;"
                         cur.execute(alter)
                         conn.commit()
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
@@ -2642,6 +2797,7 @@ class ZonesInfluenciaAdaptatives:
                                 self.barraEstat_Error()
                                 QMessageBox.information(None, "Error", "Error a la connexio")
                                 self.eliminaTaulesCalcul(Fitxer)
+                                self.eliminaTaulesTemporals()
                     
                                 return
                                 
@@ -2662,35 +2818,36 @@ class ZonesInfluenciaAdaptatives:
                             cur.execute(sql_1)
                             conn.commit()
                             
-                            error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                            error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                             if error[0] != 0:
                                 iface.messageBar().pushMessage(u'Error', error[1])
                                 
-                            #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                            #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                             #if error[0] != 0:
                             #    iface.messageBar().pushMessage(u'Error', error[1])
                                 
                             taula_buffer="buffer_final_"+Fitxer 
-                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"radi\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"NPlaces\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Cobertura\", \"" + taula_buffer + "\".\"the_geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"     
+                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"radi\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"available_places\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Cobertura\", \"" + taula_buffer + "\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"     
                         else:
                             taula_buffer=self.calcul_graf(sql_total,"nouradi")
                             if taula_buffer=="ERROR":
                                 self.dlg.setEnabled(True)
                                 return
                             
-                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", \"the_geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
+                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"geom\", \"Cobertura\", \"geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
                             #print create
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
                         self.dlg.setEnabled(True)
-                        print ("Agregacio nou radi no feta")
+                        print ("Agregacio nou radi no feta 3")
                         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                         message = template.format(type(ex).__name__, ex.args)
                         print (message)
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Agregacio nou radi no feta")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                         
@@ -2701,8 +2858,8 @@ class ZonesInfluenciaAdaptatives:
                         drop="DROP TABLE IF EXISTS \"AgregacioNouRadi_Temp\";"
                         cur.execute(drop)
                         conn.commit()            
-                        #josep create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
-                        create = "CREATE local temp TABLE \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"NPlaces\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))),100) the_geom, round((\"radi\"*sqrt((\"NPlaces\"/(\"Habitants\"*\"Cobertura\"))))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
+                        #josep create = "create table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"available_places\"/\"Habitants\")*\"Cobertura\"))),100) geom, round((\"radi\"*sqrt((\"available_places\"/\"Habitants\")*\"Cobertura\"))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
+                        create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"geom\", \"Cobertura\", ST_buffer(\"geom\",round((\"radi\"*sqrt((\"available_places\"/(\"Habitants\"*\"Cobertura\"))))),100) the_geom, round((\"radi\"*sqrt((\"available_places\"/(\"Habitants\"*\"Cobertura\"))))) as NouRadi from \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                         cur.execute(create)
                         conn.commit()
                     except Exception as ex:
@@ -2714,6 +2871,7 @@ class ZonesInfluenciaAdaptatives:
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Agregacio nou radi no feta " + str(i))
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                         
@@ -2731,8 +2889,8 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"AgregacioSumaHabPostBucle_Temp\";\n"
             cur.execute(drop)
             conn.commit()
-            #josep create = "create local temp table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"NPlaces\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"NPlaces\",\"Cobertura\";"
-            create = "create local temp table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"NPlaces\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"NPlaces\",\"Cobertura\";"
+            #josep create = "create table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"available_places\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"available_places\",\"Cobertura\";"
+            create = "create local temp table \"AgregacioSumaHabPostBucle_Temp\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"available_places\",\"Cobertura\", sum("+taula +".\"Habitants\") as \"Habitants_Solapats\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"available_places\",\"Cobertura\";"
             #print create
             cur.execute(create)
             conn.commit() 
@@ -2745,6 +2903,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "No s'ha pogut realitzar la tasca")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
 
@@ -2756,8 +2915,8 @@ class ZonesInfluenciaAdaptatives:
             drop+="DROP TABLE IF EXISTS \"UnioZI_InfluenciesHab_Temp\";"
             cur.execute(drop)
             conn.commit()
-            create = "create local temp table \"UnioSumaHab_Temp\" AS select ST_Union(\"the_geom\") the_geom from \"AgregacioNouRadi_Temp\";\n"
-            create += "create local temp table \"UnioZI_InfluenciesHab_Temp\" AS select (ST_Dump(\"the_geom\")).path[1] As id_zi_combi, (ST_Dump(\"the_geom\")).geom the_geom from \"UnioSumaHab_Temp\";"
+            create = "create local temp table \"UnioSumaHab_Temp\" AS select ST_Union(\"the_geom\") geom from \"AgregacioNouRadi_Temp\";\n"
+            create += "create local temp table \"UnioZI_InfluenciesHab_Temp\" AS select (ST_Dump(\"geom\")).path[1] As id_zi_combi, (ST_Dump(\"geom\")).geom geom from \"UnioSumaHab_Temp\";"
             #print create
             cur.execute(create)
             conn.commit()
@@ -2770,6 +2929,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "No s'ha fet la unio")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
         
@@ -2780,9 +2940,9 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"AgregacioSumaHabConjunt_Temp\";\n"
             cur.execute(drop)
             conn.commit()
-            #create = "create local temp table \"AgregacioSumaHabConjunt_Temp\" AS "
+            #create = "create table \"AgregacioSumaHabConjunt_Temp\" AS "
             create = "create local temp table \"AgregacioSumaHabConjunt_Temp\" AS "
-            create += "select \"id_zi_combi\", sum("+ taula +".\"Habitants\") as \"Habitants\",  \"the_geom\" from \"UnioZI_InfluenciesHab_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"UnioZI_InfluenciesHab_Temp\".\"the_geom\") group by \"UnioZI_InfluenciesHab_Temp\".\"id_zi_combi\",\"the_geom\";"
+            create += "select \"id_zi_combi\", sum("+ taula +".\"Habitants\") as \"Habitants\", \"UnioZI_InfluenciesHab_Temp\".\"geom\" from \"UnioZI_InfluenciesHab_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"UnioZI_InfluenciesHab_Temp\".\"geom\") group by \"UnioZI_InfluenciesHab_Temp\".\"id_zi_combi\",\"UnioZI_InfluenciesHab_Temp\".\"geom\";"
             #print create
             cur.execute(create)
             conn.commit()
@@ -2795,6 +2955,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "No s'ha fet l'agregacio post")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
 
@@ -2802,7 +2963,7 @@ class ZonesInfluenciaAdaptatives:
 #       JOIN + INTERSECCIO DE LA POBLACIO SUMA HABITANTS SOLAPATS
 #       *****************************************************************************************************************
         try:
-            create = "create table \"ZI_Total_Combi_" + Fitxer +"\" as select \"id_zi_combi\",sum(\"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\") as \"Suma_Habitants_Solapats\", \"Habitants\" as HabitantsReals, \"the_geom\" from \"AgregacioSumaHabConjunt_Temp\" join \"AgregacioSumaHabPostBucle_Temp\"  on ST_Intersects(ST_buffer(\"AgregacioSumaHabPostBucle_Temp\".\"geom\",80,5), \"AgregacioSumaHabConjunt_Temp\".\"the_geom\") group by \"the_geom\",\"id_zi_combi\",\"Habitants\";"
+            create = "create table \"ZI_Total_Combi_" + Fitxer +"\" as select \"id_zi_combi\",sum(\"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\") as \"Suma_Habitants_Solapats\", \"Habitants\" as HabitantsReals, \"AgregacioSumaHabConjunt_Temp\".\"geom\" from \"AgregacioSumaHabConjunt_Temp\" join \"AgregacioSumaHabPostBucle_Temp\"  on ST_Intersects(ST_buffer(\"AgregacioSumaHabPostBucle_Temp\".\"geom\",80,5), \"AgregacioSumaHabConjunt_Temp\".\"geom\") group by \"AgregacioSumaHabConjunt_Temp\".\"geom\",\"id_zi_combi\",\"Habitants\";"
             #print create
             cur.execute(create)
             conn.commit()
@@ -2815,7 +2976,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "No s'ha fet l'agregacio COMBI")
             self.eliminaTaulesCalcul(Fitxer)
-
+            self.eliminaTaulesTemporals()
             return
 
 #       *****************************************************************************************************************
@@ -2825,7 +2986,7 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"EntitatBase\";"
             cur.execute(drop)
             conn.commit()
-            create = "CREATE TABLE \"EntitatBase\" as select \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"geom\",\"radi\",\"NPlaces\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\" from \"AgregacioSumaHabPostBucle_Temp\" join \"ZI_Total_Combi_" + Fitxer +"\"  on ST_Intersects(ST_buffer(\"AgregacioSumaHabPostBucle_Temp\".\"geom\",80,5), \"ZI_Total_Combi_" + Fitxer +"\".\"the_geom\") group by \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"geom\",\"radi\",\"NPlaces\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\";"
+            create = "CREATE TABLE \"EntitatBase\" as select \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"AgregacioSumaHabPostBucle_Temp\".\"geom\",\"radi\",\"available_places\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\" from \"AgregacioSumaHabPostBucle_Temp\" join \"ZI_Total_Combi_" + Fitxer +"\"  on ST_Intersects(ST_buffer(\"AgregacioSumaHabPostBucle_Temp\".\"geom\",80,5), \"ZI_Total_Combi_" + Fitxer +"\".\"geom\") group by \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"AgregacioSumaHabPostBucle_Temp\".\"geom\",\"radi\",\"available_places\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\";"
             #print create
             cur.execute(create)
             conn.commit()
@@ -2838,6 +2999,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "No s'ha fet l'agregacio ENTITAT BASE")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
 
@@ -2848,7 +3010,7 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"EntitatBase_NRS_"+Fitxer+"\";\n"
             cur.execute(drop)
             conn.commit()
-            create = "create table \"EntitatBase_NRS_"+Fitxer+"\" as select *,round(\"radi\"*sqrt(\"NPlaces\"/(\"Habitants_Solapats\"*(\"habitantsreals\"/\"Suma_Habitants_Solapats\")*\"Cobertura\"))) NRS from \"EntitatBase\";"
+            create = "create table \"EntitatBase_NRS_"+Fitxer+"\" as select *,round(\"radi\"*sqrt(\"available_places\"/(\"Habitants_Solapats\"*(\"habitantsreals\"/\"Suma_Habitants_Solapats\")*\"Cobertura\"))) NRS from \"EntitatBase\";"
             cur.execute(create)
             conn.commit()
         except Exception as ex:
@@ -2860,6 +3022,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "No s'ha fet l'agregacio ENTITAT BASE NRS")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -2890,6 +3053,7 @@ class ZonesInfluenciaAdaptatives:
                         self.barraEstat_Error()
                         QMessageBox.information(None, "Error", "Error a la connexio")
                         self.eliminaTaulesCalcul(Fitxer)
+                        self.eliminaTaulesTemporals()
             
                         return
                         
@@ -2907,32 +3071,33 @@ class ZonesInfluenciaAdaptatives:
                     cur.execute(sql_1)
                     conn.commit()
                     
-                    error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                    error = QgsVectorLayerExporter.exportLayer(vlayer, 'table="public"."buffer_final_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                     if error[0] != 0:
                         iface.messageBar().pushMessage(u'Error', error[1])
                         
-                    #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (the_geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
+                    #error = QgsVectorLayerExporter.exportLayer(buffer_dissolved['OUTPUT'], 'table="public"."buffer_diss_'+Fitxer+'" (geom) '+uri.connectionInfo(), "postgres", vlayer.crs(), False)
                     #if error[0] != 0:
                     #    iface.messageBar().pushMessage(u'Error', error[1])
                         
                     taula_buffer="buffer_final_"+Fitxer
-                    create = "create local temp table \"AgregacioTotalBuffer_Temp\" AS select \"EntitatBase_NRS_"+Fitxer+"\".*, \"the_geom\" from \"" + taula_buffer + "\" join \"EntitatBase_NRS_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"EntitatBase_NRS_"+Fitxer+"\".\"id\");"  
+                    create = "create local temp table \"AgregacioTotalBuffer_Temp\" AS select \"EntitatBase_NRS_"+Fitxer+"\".*, \"" + taula_buffer + "\".\"geom\" AS \"the_geom\" from \"" + taula_buffer + "\" join \"EntitatBase_NRS_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"EntitatBase_NRS_"+Fitxer+"\".\"id\");"  
                         
                 else:
                     taula_buffer=self.calcul_graf(sql_total,"nrs")
-                    create = "create local temp table \"AgregacioTotalBuffer_Temp\" AS select \"EntitatBase_NRS_"+Fitxer+"\".*, \"the_geom\" from \"" + taula_buffer + "\" join \"EntitatBase_NRS_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"EntitatBase_NRS_"+Fitxer+"\".\"id\");"
+                    create = "create local temp table \"AgregacioTotalBuffer_Temp\" AS select \"EntitatBase_NRS_"+Fitxer+"\".*, \"" + taula_buffer + "\".\"geom\" AS \"the_geom\" from \"" + taula_buffer + "\" join \"EntitatBase_NRS_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"EntitatBase_NRS_"+Fitxer+"\".\"id\");"
                     #print create
                 cur.execute(create)
                 conn.commit()
             except Exception as ex:
                 self.dlg.setEnabled(True)
-                print ("Agregacio nou radi no feta")
+                print ("Agregacio nou radi no feta 4")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
                 print (message)
                 self.barraEstat_Error()
                 QMessageBox.information(None, "Error", "Agregacio nou radi no feta")
                 self.eliminaTaulesCalcul(Fitxer)
+                self.eliminaTaulesTemporals()
     
                 return
         
@@ -2948,13 +3113,14 @@ class ZonesInfluenciaAdaptatives:
                 conn.commit()
             except Exception as ex:
                 self.dlg.setEnabled(True)
-                print ("Agregacio nou radi no feta")
+                print ("Agregacio nou radi no feta 6")
                 template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                 message = template.format(type(ex).__name__, ex.args)
                 print (message)
                 self.barraEstat_Error()
                 QMessageBox.information(None, "Error", "Agregacio nou radi no feta")
                 self.eliminaTaulesCalcul(Fitxer)
+                self.eliminaTaulesTemporals()
     
                 return
                 
@@ -2967,20 +3133,48 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"AgregacioTotal_Temp\";\n"
             cur.execute(drop)
             conn.commit()
-            #create = "create local temp table \"AgregacioTotal_Temp\" AS select \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\", sum(\"Habitants\") as \"Habitants\" from \"AgregacioTotalBuffer_Temp\" join "+ taula + " on ST_Intersects("+ taula + ".\"geom\", \"AgregacioTotalBuffer_Temp\".\"the_geom\") group by \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\";"
-            create = "create local temp table \"AgregacioTotal_Temp\" AS select \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\", sum(\"Habitants\") as \"Habitants\" from \"AgregacioTotalBuffer_Temp\" join "+ taula + " on ST_Intersects("+ taula + ".\"geom\", \"AgregacioTotalBuffer_Temp\".\"the_geom\") group by \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"NPlaces\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"the_geom\";"
-            #print create
+            #create = "create table \"AgregacioTotal_Temp\" AS select \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"available_places\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"geom\", sum(\"Habitants\") as \"Habitants\" from \"AgregacioTotalBuffer_Temp\" join "+ taula + " on ST_Intersects("+ taula + ".\"geom\", \"AgregacioTotalBuffer_Temp\".\"geom\") group by \"Suma_Habitants_Solapats\",\"habitantsreals\", \"AgregacioTotalBuffer_Temp\".\"id\" ,\"AgregacioTotalBuffer_Temp\".\"geom\", \"radi\", \"available_places\", \"Cobertura\", \"Habitants_Solapats\", \"nrs\",\"geom\";"
+            create = f"""
+            create local temp table \"AgregacioTotal_Temp\" AS
+            select
+                \"Suma_Habitants_Solapats\",
+                \"habitantsreals\", 
+                \"AgregacioTotalBuffer_Temp\".\"id\" ,
+                \"AgregacioTotalBuffer_Temp\".\"geom\", 
+                \"radi\", 
+                \"available_places\", 
+                \"Cobertura\", 
+                \"Habitants_Solapats\", 
+                \"nrs\",
+                \"AgregacioTotalBuffer_Temp\".\"the_geom\" AS \"the_geom\", 
+                sum(\"Habitants\") as \"Habitants\" 
+            from \"AgregacioTotalBuffer_Temp\" 
+            join {taula} 
+                on ST_Intersects({taula}.\"geom\", \"AgregacioTotalBuffer_Temp\".\"the_geom\") 
+            group by 
+                \"Suma_Habitants_Solapats\",
+                \"habitantsreals\", 
+                \"AgregacioTotalBuffer_Temp\".\"id\" ,
+                \"AgregacioTotalBuffer_Temp\".\"geom\", 
+                \"radi\", 
+                \"available_places\", 
+                \"Cobertura\", 
+                \"Habitants_Solapats\", 
+                \"nrs\",
+                \"AgregacioTotalBuffer_Temp\".\"the_geom\";
+            """
             cur.execute(create)
             conn.commit()  
         except Exception as ex:
             self.dlg.setEnabled(True)
-            print ("no s'ha creat l'agregacio")
+            print ("no s'ha creat l'agregacio 2")
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(ex).__name__, ex.args)
             print (message)
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "no s'ha creat l'agregacio")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -2991,11 +3185,11 @@ class ZonesInfluenciaAdaptatives:
         conn.commit()
         '''
         nomTaula = "\"EntitatPuntual_Temp_"+Fitxer+"\""
-        create = "create table \"TAULA_FINAL_" + Fitxer +"\" AS select " + nomTaula +".*,\"Suma_Habitants_Solapats\",\"habitantsreals\", \"radi\", \"Habitants_Solapats\", \"nrs\",\"the_geom\", \"Habitants\" FROM \"AgregacioTotal_Temp\" join " + nomTaula +" on (" + nomTaula +".\"id\" = \"AgregacioTotal_Temp\".\"id\") order by " + nomTaula +".\"id\";\n"
+        create = "create table \"TAULA_FINAL_" + Fitxer +"\" AS select " + nomTaula +".*,\"Suma_Habitants_Solapats\",\"habitantsreals\", \"radi\", \"Habitants_Solapats\", \"nrs\",\"AgregacioTotal_Temp\".\"the_geom\" AS \"the_geom\", \"Habitants\" FROM \"AgregacioTotal_Temp\" join " + nomTaula +" on (" + nomTaula +".\"id\" = \"AgregacioTotal_Temp\".\"id\") order by " + nomTaula +".\"id\";\n"
         create += "ALTER TABLE \"TAULA_FINAL_" + Fitxer +"\" DROP COLUMN IF EXISTS \"ID\";\n"
         create += "ALTER TABLE \"TAULA_FINAL_" + Fitxer +"\" DROP COLUMN IF EXISTS \"geom\";"
         try:
-            #print (create)
+            print (create)
             cur.execute(create)
             conn.commit()
         except Exception as ex:
@@ -3007,6 +3201,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "Error al crear la TAULA_FINAL")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -3023,6 +3218,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "Error a la connexio")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -3080,7 +3276,7 @@ class ZonesInfluenciaAdaptatives:
         """ Calcul dels habitants afectats"""
         #sql = "SELECT SUM(\"habitantsreals\") as Habitants from \"ZI_Total_Combi_" + Fitxer +"\";"
         
-        sql2 = "select distinct(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id\"),\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"Habitants\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\")"
+        sql2 = "select distinct(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id_zone\"),\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"Habitants\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\")"
         sql="select sum(resultat.\"Habitants\") from ("+sql2+") as resultat"
         Habitants_afectats = 0
         try:
@@ -3095,6 +3291,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "Error llegint el nombre d'habitants afectats")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -3121,6 +3318,7 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "Error llegint el nombre d'habitants totals")
             self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
 
             return
             
@@ -3147,12 +3345,13 @@ class ZonesInfluenciaAdaptatives:
                 self.barraEstat_Error()
                 QMessageBox.information(None, "Error", "Error a la connexio")
                 self.eliminaTaulesCalcul(Fitxer)
+                self.eliminaTaulesTemporals()
     
                 return
                 
-            sql = "select * from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" where \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id\" not in (select \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\"))"
+            sql = "select * from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" where \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id_zone\" not in (select \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id_zone\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\"))"
             #print (sql)
-            uri.setDataSource("","(" + sql+ ")","geom","","id")
+            uri.setDataSource("","(" + sql+ ")","geom","","id_zone")
             
             titol2='Temátic de població no afectada: '
             titol3=titol2.encode('utf8','strict')
@@ -3207,7 +3406,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
         if (self.dlg.CB_dibuixarGraf.isChecked()):
             """ Creació del tematic del graf"""
-            uri.setDataSource("","(SELECT * FROM \"graf_utilitzat_"+Fitxer+"\")","the_geom","","punt_id")
+            uri.setDataSource("","(SELECT * FROM \"graf_utilitzat_"+Fitxer+"\")","geom","","punt_id")
             
             if self.dlg.tabWidget_Destino.currentIndex() == 0:
                 titol = self.dlg.combo_punts.currentText()
@@ -3247,6 +3446,7 @@ class ZonesInfluenciaAdaptatives:
                     self.barraEstat_Error()
                     QMessageBox.information(None, "Error", "Error DROP Graf_utilitzat")
                     self.eliminaTaulesCalcul(Fitxer)
+                    self.eliminaTaulesTemporals()
         
                     return
 
@@ -3335,6 +3535,7 @@ class ZonesInfluenciaAdaptatives:
         self.barraEstat_connectat()
         
         self.eliminaTaulesCalcul(Fitxer)
+        self.eliminaTaulesTemporals()
         
         self.bar.setEnabled(True)
         self.bar.clearWidgets()
@@ -3380,7 +3581,34 @@ class ZonesInfluenciaAdaptatives:
             self.barraEstat_Error()
             QMessageBox.information(None, "Error", "Error DROP final")
             self.dlg.setEnabled(True)
-    
+            return
+        
+    def eliminaTaulesTemporals(self):
+        '''
+        Aquesta funció s'encarrega d'eliminar les taules utilitzades durant el càlcul
+        '''
+        if versio_db == '1.0':
+            drop=""     
+            drop += "DROP TABLE IF EXISTS parcel_temp;\n"
+            drop += "DROP TABLE IF EXISTS zone;\n"
+            drop += "DROP TABLE IF EXISTS address;\n"
+            drop += "DROP TABLE IF EXISTS stretch;\n"
+            drop += "DROP TABLE IF EXISTS stretch_vertices_pgr;\n"
+        else:
+            drop="DROP TABLE IF EXISTS parcel_temp;"
+        
+        try:
+            cur.execute(drop)
+            conn.commit()
+        except Exception as ex:
+            self.dlg.setEnabled(True)
+            print ("Error DROP final")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            self.barraEstat_Error()
+            QMessageBox.information(None, "Error", "Error DROP final")
+            self.dlg.setEnabled(True)
             return
     
     def on_click_Esborra_temporals(self):
