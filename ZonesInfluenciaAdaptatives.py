@@ -2781,7 +2781,7 @@ class ZonesInfluenciaAdaptatives:
                     drop = "DROP TABLE IF EXISTS \"AgregacioSumaHab_Temp_"+Fitxer+"\";"
                     cur.execute(drop)
                     conn.commit()
-                    create = "CREATE TABLE \"AgregacioSumaHab_Temp_"+Fitxer+"\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"available_places\",\"Cobertura\", sum("+taula+".\"Habitants\") as \"Habitants\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"available_places\",\"Cobertura\";"
+                    create = "CREATE TABLE \"AgregacioSumaHab_Temp_"+Fitxer+"\" AS select \"AgregacioNouRadi_Temp\".\"id\", \"AgregacioNouRadi_Temp\".\"geom\",\"nouradi\" as radi,\"available_places\",\"Cobertura\", sum("+taula+".\"Habitants\") as \"Habitants\" from \"AgregacioNouRadi_Temp\" join "+ taula + "  on ST_Intersects("+ taula +".\"geom\", \"AgregacioNouRadi_Temp\".\"the_geom\") group by \"AgregacioNouRadi_Temp\".\"geom\", \"AgregacioNouRadi_Temp\".\"id\", \"nouradi\",\"available_places\",\"Cobertura\";"
                     #print create
                     cur.execute(create)
                     conn.commit() 
@@ -2858,14 +2858,14 @@ class ZonesInfluenciaAdaptatives:
                             #    iface.messageBar().pushMessage(u'Error', error[1])
                                 
                             taula_buffer="buffer_final_"+Fitxer 
-                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"radi\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"available_places\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Cobertura\", \"" + taula_buffer + "\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"     
+                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"radi\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"available_places\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"Cobertura\", \"" + taula_buffer + "\".\"geom\" AS the_geom, \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"     
                         else:
                             taula_buffer=self.calcul_graf(sql_total,"nouradi")
                             if taula_buffer=="ERROR":
                                 self.dlg.setEnabled(True)
                                 return
                             
-                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"geom\", \"Cobertura\", \"geom\", \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
+                            create = "create local temp table \"AgregacioNouRadi_Temp\" AS select \"id\", \"radi\", \"available_places\", \"Habitants\", \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"geom\", \"Cobertura\", \""+taula_buffer+"\".\"geom\" AS the_geom, \"nouradi\" from \"" + taula_buffer + "\" join \"AgregacioSumaHab_Temp_"+Fitxer+"\" on (\"" + taula_buffer + "\".\"punt_id\" = \"AgregacioSumaHab_Temp_"+Fitxer+"\".\"id\");"
                             #print create
                         cur.execute(create)
                         conn.commit()
