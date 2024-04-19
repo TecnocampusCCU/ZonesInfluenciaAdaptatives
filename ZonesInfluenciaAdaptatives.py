@@ -482,94 +482,7 @@ class ZonesInfluenciaAdaptatives:
                 self.ompleCombos(self.dlg.comboGraf, llista2, 'Selecciona una entitat', True)
                 self.dlg.Esborra_temp.setVisible(True) 
                 self.cerca_elements_Leyenda()
-
-                sql_versio = "select taula from config where variable = 'versio';"
-                cur.execute(sql_versio)
-                versio_db = cur.fetchone()[0]
-
-                if versio_db == '1.0':
-                    try:
-                        sql = "SELECT taula FROM config WHERE variable = 'parceles';"
-                        cur.execute(sql)
-                        parcel_name = cur.fetchone()[0]
-                        sql = "SELECT taula FROM config WHERE variable = 'illes';"
-                        cur.execute(sql)
-                        illes_name = cur.fetchone()[0]
-                        sql = "SELECT taula FROM config WHERE variable = 'portals';"
-                        cur.execute(sql)
-                        portals_name = cur.fetchone()[0]
-                        sql = "SELECT taula FROM config WHERE variable = 'xarxa';"
-                        cur.execute(sql)
-                        xarxa_name = cur.fetchone()[0]
-                    except:
-                        print("Error al llegir la configuració de la base de dades")
-                        QMessageBox.information(None, "Error", "Error al llegir la configuració de la base de dades")
-                        return
-                    try:
-                        cur.execute(f"""
-                                    DROP TABLE IF EXISTS parcel_temp;
-                                    CREATE TABLE parcel_temp (
-                                        id_parcel,
-                                        geom,
-                                        cadastral_reference
-                                    ) AS SELECT "id", "geom", "utm_total" FROM "{parcel_name}";
-                                    """)
-                        conn.commit()
-                        cur.execute(f"""
-                                    DROP TABLE IF EXISTS zone;
-                                    CREATE TABLE zone (
-                                        id_zone,
-                                        geom,
-                                        cadastral_zoning_reference
-                                    ) AS SELECT "id", "geom", "D_S_I" FROM "{illes_name}";
-                                    """)
-                        conn.commit()
-                        cur.execute(f"""
-                                    DROP TABLE IF EXISTS address;
-                                    CREATE TABLE address (
-                                        id_address,
-                                        geom,
-                                        cadastral_reference,
-                                        designator
-                                    ) AS SELECT id, geom, "REF_CADAST", "Carrer_Num_Bis" FROM "{portals_name}";
-                                    """)
-                        conn.commit()
-                        if self.dlg.CB_tramsUtils.isChecked():
-                            cur.execute(f"""
-                                        DROP TABLE IF EXISTS stretch;
-                                        CREATE TABLE stretch (
-                                            id,
-                                            cost,
-                                            reverse_cost,
-                                            semaphores,
-                                            total_cost_semaphore,
-                                            geom,
-                                            source,
-                                            target,
-                                            length,
-                                            direction,
-                                            slope_abs,
-                                            speed,
-                                            reverse_speed
-                                        ) AS SELECT "id", "cost", "reverse_cost", "Nombre_Semafors", "Cost_Total_Semafor_Tram", "the_geom", "source", "target", "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "{self.dlg.comboGraf.currentText()}";
-                                        """)
-                            conn.commit()
-                            cur.execute(f"""SELECT pgr_createTopology('stretch', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
-                            conn.commit()
-                    except:
-                        print("Error al crear les taules temporals")
-                        QMessageBox.information(None, "Error", "Error al crear les taules temporals")
-                        return
-                else:
-                    try:
-                        sql = "DROP TABLE IF EXISTS parcel_temp;\n"
-                        sql += "CREATE TABLE parcel_temp AS SELECT * FROM parcel;"
-                        cur.execute(sql)
-                        conn.commit()
-                    except:
-                        print("Error al crear la taula temporal")
-                        QMessageBox.information(None, "Error", "Error al crear la taula temporal")
-                        return
+                self.database_version()
             except Exception as ex:
                 self.dlg.setEnabled(True)
                 print ("Error a la connexio")
@@ -589,6 +502,105 @@ class ZonesInfluenciaAdaptatives:
         else:
             self.barraEstat_noConnectat()
         
+    def database_version(self):
+        global cur
+        global conn
+        
+        sql_versio = "select taula from config where variable = 'versio';"
+        cur.execute(sql_versio)
+        versio_db = cur.fetchone()[0]
+        print(f"Versio de la base de dades: {versio_db}")
+
+        if versio_db == '1.0':
+            try:
+                sql = "SELECT taula FROM config WHERE variable = 'parceles';"
+                cur.execute(sql)
+                parcel_name = cur.fetchone()[0]
+                sql = "SELECT taula FROM config WHERE variable = 'illes';"
+                cur.execute(sql)
+                illes_name = cur.fetchone()[0]
+                sql = "SELECT taula FROM config WHERE variable = 'portals';"
+                cur.execute(sql)
+                portals_name = cur.fetchone()[0]
+                sql = "SELECT taula FROM config WHERE variable = 'xarxa';"
+                cur.execute(sql)
+                xarxa_name = cur.fetchone()[0]
+            except:
+                print("Error al llegir la configuració de la base de dades")
+                QMessageBox.information(None, "Error", "Error al llegir la configuració de la base de dades")
+                return
+            try:
+                cur.execute(f"""
+                            DROP TABLE IF EXISTS parcel_temp;
+                            CREATE TABLE parcel_temp (
+                                id_parcel,
+                                geom,
+                                cadastral_reference
+                            ) AS SELECT "id", "geom", "utm_total" FROM "{parcel_name}";
+                            """)
+                conn.commit()
+                print(f"Copia de la taula de parcel·les creada correctament, versio {versio_db}")
+                cur.execute(f"""
+                            DROP TABLE IF EXISTS zone;
+                            CREATE TABLE zone (
+                                id_zone,
+                                geom,
+                                cadastral_zoning_reference
+                            ) AS SELECT "id", "geom", "D_S_I" FROM "{illes_name}";
+                            """)
+                conn.commit()
+                print(f"Copia de la taula de zones creada correctament, versio {versio_db}")
+                cur.execute(f"""
+                            DROP TABLE IF EXISTS address;
+                            CREATE TABLE address (
+                                id_address,
+                                geom,
+                                cadastral_reference,
+                                designator
+                            ) AS SELECT id, geom, "REF_CADAST", "Carrer_Num_Bis" FROM "{portals_name}";
+                            """)
+                conn.commit()
+                print(f"Copia de la taula de adreces creada correctament, versio {versio_db}")
+                if self.dlg.CB_tramsUtils.isChecked():
+                    cur.execute(f"""
+                                DROP TABLE IF EXISTS stretch;
+                                CREATE TABLE stretch (
+                                    id,
+                                    cost,
+                                    reverse_cost,
+                                    semaphores,
+                                    total_cost_semaphore,
+                                    geom,
+                                    source,
+                                    target,
+                                    length,
+                                    direction,
+                                    slope_abs,
+                                    speed,
+                                    reverse_speed
+                                ) AS SELECT "id", "cost", "reverse_cost", "Nombre_Semafors", "Cost_Total_Semafor_Tram", "the_geom", "source", "target", "LENGTH", "SENTIT", "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "{self.dlg.comboGraf.currentText()}";
+                                """)
+                    conn.commit()
+                    print(f"Copia de la taula de trams creada correctament, versio {versio_db}")
+                    cur.execute(f"""SELECT pgr_createTopology('stretch', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
+                    print(f"Topologia de la xarxa creada correctament, versio {versio_db}")
+                    conn.commit()
+                    print(f"Copies de les taules temporals creades correctament, versio {versio_db}")
+            except:
+                print("Error al crear les taules temporals")
+                QMessageBox.information(None, "Error", "Error al crear les taules temporals")
+                return
+        else:
+            try:
+                sql = "DROP TABLE IF EXISTS parcel_temp;\n"
+                sql += "CREATE TABLE parcel_temp AS SELECT * FROM parcel;"
+                cur.execute(sql)
+                conn.commit()
+            except:
+                print("Error al crear la taula temporal")
+                QMessageBox.information(None, "Error", "Error al crear la taula temporal")
+                return
+
     def on_Change_ComboGraf(self, state):
         """
         En el moment en que es modifica la opcio escollida 
@@ -2218,6 +2230,25 @@ class ZonesInfluenciaAdaptatives:
                             return
         
         
+        try:
+            self.database_version()
+        except Exception as ex:
+            self.dlg.setEnabled(True)
+            print ("ERROR SELECT VERSION")
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(ex).__name__, ex.args)
+            print (message)
+            QMessageBox.information(None, "Error", "ERROR SELECT VERSION")
+            conn.rollback()
+            self.eliminaTaulesCalcul(Fitxer)
+            self.eliminaTaulesTemporals()
+    
+            self.bar.clearWidgets()
+            self.dlg.Progres.setValue(0)
+            self.dlg.Progres.setVisible(False)
+            self.dlg.lblEstatConn.setText('Connectat')
+            self.dlg.lblEstatConn.setStyleSheet('border:1px solid #000000; background-color: #7fff7f')
+            return
         
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LES TAULES RESUM DESDE EL CSV SUMINISTRAT 
@@ -2532,7 +2563,7 @@ class ZonesInfluenciaAdaptatives:
                         self.eliminaTaulesTemporals()
             
                         return
-                    sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                    sql_xarxa="SELECT * FROM \"stretch\""
                     buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(radi[0]))#self.dlg.txt_radi.text()
                     vlayer=buffer_resultat
                     vlayer_graf=graf_resultat
@@ -2671,7 +2702,7 @@ class ZonesInfluenciaAdaptatives:
                             selectNouRadi = "SELECT DISTINCT \"nouradi\" FROM \"AgregacioSumaHab_Temp_"+Fitxer+"\""
                             cur.execute(selectNouRadi)
                             nouRadi = cur.fetchone()
-                            sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""
+                            sql_xarxa="SELECT * FROM \"stretch\""
 
                             buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))
                             vlayer=buffer_resultat
@@ -2805,7 +2836,7 @@ class ZonesInfluenciaAdaptatives:
                             selectNouRadi = "SELECT DISTINCT \"nouradi\" FROM \"AgregacioSumaHab_Temp_"+Fitxer+"\""
                             cur.execute(selectNouRadi)
                             nouRadi = cur.fetchone()
-                            sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""                     
+                            sql_xarxa="SELECT * FROM \"stretch\""                     
 
                             buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))
                             
@@ -3060,7 +3091,7 @@ class ZonesInfluenciaAdaptatives:
                     selectNrs = "SELECT DISTINCT NRS FROM \"EntitatBase_NRS_"+Fitxer+"\""
                     cur.execute(selectNrs)
                     nrs = cur.fetchone()
-                    sql_xarxa="SELECT * FROM \""+self.dlg.comboGraf.currentText()+"\""                  
+                    sql_xarxa="SELECT * FROM \"stretch\""                  
                     buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nrs[0]))#self.dlg.txt_radi.text()
                     vlayer=buffer_resultat
                     vlayer_graf=graf_resultat
@@ -3351,7 +3382,8 @@ class ZonesInfluenciaAdaptatives:
                 
             sql = "select * from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" where \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id_zone\" not in (select \"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"id_zone\" from \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" join \"TAULA_FINAL_" + Fitxer +"\" on ST_Intersects(\"JoinIlles_Habitants_Temp_"+ Fitxer + "\".\"geom\",\"TAULA_FINAL_" + Fitxer +"\".\"the_geom\"))"
             #print (sql)
-            uri.setDataSource("","(" + sql+ ")","geom","","id_zone")
+            uri.setDataSource("","("+sql+")","geom","","id_zone")
+            print (uri.uri())
             
             titol2='Temátic de població no afectada: '
             titol3=titol2.encode('utf8','strict')
