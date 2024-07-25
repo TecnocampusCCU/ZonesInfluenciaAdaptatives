@@ -498,7 +498,7 @@ class ZonesInfluenciaAdaptatives:
     
                 return
 
-            self.DropTemporalTables()
+            #self.DropTemporalTables()
         else:
             self.barraEstat_noConnectat()
         
@@ -510,6 +510,7 @@ class ZonesInfluenciaAdaptatives:
         versio_db = cur.fetchone()[0]
 
         if versio_db == '1.0':
+            #print(versio_db)
             try:
                 sql = "SELECT taula FROM config WHERE variable = 'parceles';"
                 cur.execute(sql)
@@ -584,6 +585,7 @@ class ZonesInfluenciaAdaptatives:
                 return
         else:
             try:
+                #print(versio_db)
                 sql = "DROP TABLE IF EXISTS parcel_temp;\n"
                 sql += "CREATE TABLE parcel_temp AS SELECT * FROM parcel;"
                 cur.execute(sql)
@@ -2099,6 +2101,8 @@ class ZonesInfluenciaAdaptatives:
             QMessageBox.information(None, "Error", "Error a la connexio")
             conn.rollback()
             return
+        self.detect_database_version()
+
         #********************************************************************************************************
         #    Afegir l'exportació del layer, i posteriorment llençar un avis en cas de que l'entitat sigui buida 
         #********************************************************************************************************
@@ -2109,15 +2113,20 @@ class ZonesInfluenciaAdaptatives:
                 for layer in layers:
                     if layer.name() == self.dlg.comboLeyenda.currentText():
                         try:
-                            sql_SRID="SELECT Find_SRID('public', 'zone', 'geom')"
+                            if (self.dlg.bt_ILLES.isChecked()):
+                                sql_SRID="SELECT Find_SRID('public', 'zone', 'geom')"
+                            if (self.dlg.bt_Parcel.isChecked()):
+                                sql_SRID="SELECT Find_SRID('public', 'parcel', 'geom')"
+                            if (self.dlg.bt_Portals.isChecked()):
+                                sql_SRID="SELECT Find_SRID('public', 'address', 'geom')"
                             cur.execute(sql_SRID)
                         except Exception as ex:
                             self.dlg.setEnabled(True)
-                            print ("ERROR SELECT SRID zone")
+                            print ("ERROR SELECT SRID 1")
                             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
                             message = template.format(type(ex).__name__, ex.args)
                             print (message)
-                            QMessageBox.information(None, "Error", "ERROR SELECT SRID zone")
+                            QMessageBox.information(None, "Error", "ERROR SELECT SRID 1")
                             conn.rollback()
                             self.eliminaTaulesCalcul(Fitxer)
                             self.eliminaTaulesTemporals()
@@ -3658,12 +3667,12 @@ class ZonesInfluenciaAdaptatives:
         self.DropTempTable("ZI_Total_Combi_")
         self.DropTempTable("graf_utilitzat_")
         self.DropTempTable("JoinIlles_Habitants_Temp_")
-        print('drop joinilles')
+        #print('drop joinilles')
         self.DropTempTable("EntitatBase")
         self.DropTempTable("EntitatBase_NRS_")
         self.DropTempTable("buffer_final_")
         self.DropTempTable("JoinIlles_Habitants_Temp_")
-        print('drop joinilles')
+        #print('drop joinilles')
         self.DropTempTable("AgregacioSumaHab_Temp_")
         self.DropTempTable("AgrupacioRadiFix_Temp")
         self.DropTempTable("EntitatBase_NRS_")
@@ -3676,6 +3685,7 @@ class ZonesInfluenciaAdaptatives:
         self.DropTempTable("AgregacioSumaHabPostBucle_Temp")
         self.DropTempTable("parcel_temp")
         if versio_db == '1.0':
+            pass
             self.DropTempTable("zone")
             self.DropTempTable("address")
             self.DropTempTable("stretch")
