@@ -72,7 +72,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.240429"
+Versio_modul="V_Q3.240910"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -441,9 +441,12 @@ class ZonesInfluenciaAdaptatives:
         global versio_db
         
         s = QSettings()
-        self.dlg.combo_punts.clear()
-        self.dlg.comboGraf.clear()
-        self.dlg.comboLeyenda.clear()
+        self.dlg.combo_punts.setCurrentIndex(0)
+        self.dlg.comboGraf.setCurrentIndex(0)
+        self.dlg.comboLeyenda.setCurrentIndex(0)
+        self.dlg.CB_tramsUtils.setChecked(False)
+        self.dlg.CB_dibuixarGraf.setChecked(False)
+        self.dlg.chk_calc_local.setChecked(False)
         select = 'Selecciona connexió'
         nom_conn=self.dlg.comboConnexio.currentText()
         if nom_conn != select:
@@ -498,7 +501,7 @@ class ZonesInfluenciaAdaptatives:
     
                 return
 
-            #self.DropTemporalTables()
+            self.DropTemporalTables()
         else:
             self.barraEstat_noConnectat()
         
@@ -510,7 +513,6 @@ class ZonesInfluenciaAdaptatives:
         versio_db = cur.fetchone()[0]
 
         if versio_db == '1.0':
-            #print(versio_db)
             try:
                 sql = "SELECT taula FROM config WHERE variable = 'parceles';"
                 cur.execute(sql)
@@ -579,13 +581,17 @@ class ZonesInfluenciaAdaptatives:
                     conn.commit()
                     cur.execute(f"""SELECT pgr_createTopology('stretch', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
                     conn.commit()
-            except:
+            except Exception as ex:
+                self.dlg.setEnabled(True)
                 print("Error al crear les taules temporals")
+                template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+                message = template.format(type(ex).__name__, ex.args)
+                print (message)
+                self.barraEstat_Error()
                 QMessageBox.information(None, "Error", "Error al crear les taules temporals")
                 return
         else:
             try:
-                #print(versio_db)
                 sql = "DROP TABLE IF EXISTS parcel_temp;\n"
                 sql += "CREATE TABLE parcel_temp AS SELECT * FROM parcel;"
                 cur.execute(sql)
@@ -965,11 +971,11 @@ class ZonesInfluenciaAdaptatives:
 #       INICI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
         XarxaCarrers = 'stretch'
-        sql_1="DROP TABLE IF EXISTS \"Xarxa_Graf\";\n"
+        sql_1=f"DROP TABLE IF EXISTS \"Xarxa_Graf_{Fitxer}\";\n"
         """ Es fa una copia de la taula que conté el graf i s'afegeixen els camps cost i reverse_cost en funció del que es necessiti, es crearà taula local temporal per evitar problemes de concurrencia"""
-        sql_1+="create local temp table \"Xarxa_Graf\" AS (SELECT * FROM \"" + XarxaCarrers + "\");\n"
+        sql_1+=f"""CREATE LOCAL TEMP TABLE \"Xarxa_Graf_{Fitxer}\" AS (SELECT * FROM "{XarxaCarrers}");\n"""
         """S'aplica com a cost tant directe com invers el valor de la longitud del segment"""
-        sql_1+="UPDATE \"Xarxa_Graf\" set \"cost\"=st_length(\"geom\"), \"reverse_cost\"=st_length(\"geom\");\n"
+        sql_1+=f"""UPDATE \"Xarxa_Graf_{Fitxer}\" SET \"cost\"=ST_Length(\"geom\"), \"reverse_cost\"=st_length(\"geom\");\n"""
         #print (sql_1)
         try:
             cur.execute(sql_1)
@@ -1028,7 +1034,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1="drop table if exists punts_interes_tmp;\n"
         
         """Es crea la taula 'punts_interes_tmp' seleccionant el centroide de la entitat seleccionada utilitzant com a radi el valor del camp seleccionat"""
-        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") geom,tmp.\"id\"as pid,tmp.\""+camp_radi+"\" from ("+sql_buff+") tmp);\n"
+        sql_1+="CREATE local temporary TABLE punts_interes_tmp as (SELECT ST_Centroid(tmp.\""+geometria+"\") geom,tmp.\"id\"as pid,tmp.\""+camp_radi+"\" from ("+sql_buff+") tmp WHERE geom IS NOT NULL);\n"
         
             
         #sql_1+="ALTER TABLE punts_interes_tmp ADD COLUMN pid BIGSERIAL PRIMARY KEY;\n"
@@ -1070,9 +1076,9 @@ class ZonesInfluenciaAdaptatives:
 #       INICI ASSIGNACIO DEL VALOR DEL TRAM MES PROPER AL CAMP 'EDGE_ID' DE LA TAULA 'PUNTS_INTERES_TMP I LA PROJECCIO DEL PUNT D'INTERES SOBRE EL TRAM
 #       *****************************************************************************************************************
         """S'assigna el valor del tram més proper al punt d'interes en el camp 'edge_id' de la taula 'punts_interes_tmp'"""
-        sql_1="UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.geom,Poi.geom)  as dist FROM \"Xarxa_Graf\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.geom,Poi.geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
+        sql_1=f"UPDATE \"punts_interes_tmp\" set \"edge_id\"=tram_proper.\"tram_id\" from (SELECT distinct on(Poi.pid) Poi.pid As Punt_id,Sg.id as Tram_id, ST_Distance(Sg.geom,Poi.geom)  as dist FROM \"Xarxa_Graf_{Fitxer}\" as Sg,\"punts_interes_tmp\" AS Poi ORDER BY  Poi.pid,ST_Distance(Sg.geom,Poi.geom),Sg.id) tram_proper where \"punts_interes_tmp\".\"pid\"=tram_proper.\"punt_id\";\n"
         """Es calcula la fraccio del tram que on esta situat la projecció del punt d'interes"""
-        sql_1+="UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom),newPoint = ST_LineInterpolatePoint(e.geom, ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom)) FROM \"Xarxa_Graf\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
+        sql_1+=f"UPDATE \"punts_interes_tmp\" SET fraction = ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom),newPoint = ST_LineInterpolatePoint(e.geom, ST_LineLocatePoint(e.geom, \"punts_interes_tmp\".geom)) FROM \"Xarxa_Graf_{Fitxer}\" AS e WHERE \"punts_interes_tmp\".\"edge_id\" = e.id;\n"
         #print (sql_1)
         try:
             cur.execute(sql_1)
@@ -1137,7 +1143,7 @@ class ZonesInfluenciaAdaptatives:
         for x in range (0,len(Radi_Variable)):
             if (x!=0):
                 sql_1+=" UNION "
-            sql_1+="SELECT node,agg_cost,start_vid,"+str(Radi_Variable[x][1])+" as init_radi FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf\" ORDER BY id','SELECT pid, edge_id, fraction, side from \"punts_interes_tmp\"',array[-"+str(Radi_Variable[x][0])+"],"+str(Radi_Variable[x][1])+",driving_side := 'b',details := false)"
+            sql_1+="SELECT node,agg_cost,start_vid,"+str(Radi_Variable[x][1])+" as init_radi FROM pgr_withPointsDD('SELECT id, source, target, cost, reverse_cost FROM \"Xarxa_Graf_"+Fitxer+"\" ORDER BY id','SELECT pid, edge_id, fraction, side from \"punts_interes_tmp\"',array[-"+str(Radi_Variable[x][0])+"],"+str(Radi_Variable[x][1])+",driving_side := 'b',details := false)"
         sql_1+=");\n"
             
         
@@ -1221,7 +1227,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI DE LA CREACIO DE LA TAULA 'TRAMS_FINALS_TMP' QUE CONTINDRA ELS TRAMS QUE FORMEN PART DEL RADI D'ACCIO INDICAT 
 #       *****************************************************************************************************************
         sql_1="DROP table IF EXISTS trams_finals_tmp;\n"
-        sql_1+="CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf\".\"id\",\"Xarxa_Graf\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,(\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")<=1 then (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\") when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf\".\"geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf\".\"geom\",1)=TRUE);\n"
+        sql_1+=f"CREATE local temporary TABLE trams_finals_tmp as (select \"Xarxa_Graf_{Fitxer}\".\"id\",\"Xarxa_Graf_{Fitxer}\".\"geom\",\"geo_punts_finals_tmp\".\"id\" as node,\"geo_punts_finals_tmp\".\"agg_cost\" as coste,(\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\") as falta,\"geo_punts_finals_tmp\".\"start_vid\" as id_punt, (select case when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf_{Fitxer}\".\"geom\")<=1 then (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf_{Fitxer}\".\"geom\") when (\"geo_punts_finals_tmp\".\"init_radi\"-\"geo_punts_finals_tmp\".\"agg_cost\")/ST_Length(\"Xarxa_Graf_{Fitxer}\".\"geom\")>1 then (1) end) as fraccio from \"Xarxa_Graf_{Fitxer}\",\"geo_punts_finals_tmp\" where ST_DWithin(\"geo_punts_finals_tmp\".\"the_geom\",\"Xarxa_Graf_{Fitxer}\".\"geom\",1)=TRUE);\n"
         #print (sql_1)
         try:
             cur.execute(sql_1)
@@ -1378,7 +1384,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI ACTUALITZACIO DELS VALORS DE COST DIRECTE, TARGET, COST INVERS DELS TRAMS INICIALS 
 #       *****************************************************************************************************************
         """Actualització dels valors de cost directe, target, cost invers dels trams inicials"""
-        sql_1="update \"fraccio_trams_raw\" set \"cost_directe\"=\"Xarxa_Graf\".\"cost\",\"target\"=\"Xarxa_Graf\".\"target\",\"cost_invers\"=\"Xarxa_Graf\".\"reverse_cost\" from \"Xarxa_Graf\" where \"id_tram\"=\"id\""
+        sql_1=f"update \"fraccio_trams_raw\" set \"cost_directe\"=\"Xarxa_Graf_{Fitxer}\".\"cost\",\"target\"=\"Xarxa_Graf_{Fitxer}\".\"target\",\"cost_invers\"=\"Xarxa_Graf_{Fitxer}\".\"reverse_cost\" from \"Xarxa_Graf_{Fitxer}\" where \"id_tram\"=\"id\""
         try:
             cur.execute(sql_1)
             conn.commit()
@@ -1533,7 +1539,7 @@ class ZonesInfluenciaAdaptatives:
 #       INICI INSERTAR ELS TRAMS INICIALS DELS QUE PARTIRA EL GRAF 
 #       *****************************************************************************************************************
         """S'afegeixen els trams inicials de cada graf per modificarlos posteriorment"""
-        sql_1="insert into \"fraccio_trams_raw\" (select SX.\"geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf\" SX inner join (Select \"edge_id\",\"pid\",\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
+        sql_1=f"insert into \"fraccio_trams_raw\" (select SX.\"geom\",PI.\"pid\" as punt_id,SX.\"id\"as id_tram,999 as fraccio,SX.\"source\" as node,PI.\"fraction\" as fraccio_inicial,SX.\"cost\",SX.\"reverse_cost\" from \"Xarxa_Graf_{Fitxer}\" SX inner join (Select \"edge_id\",\"pid\",\"fraction\" from \"punts_interes_tmp\") PI on SX.\"id\"=PI.\"edge_id\");\n"
         #print (sql_1)
         try:
             cur.execute(sql_1)
@@ -1601,7 +1607,7 @@ class ZonesInfluenciaAdaptatives:
         sql_1+=","
         sql_1+="(case when (FT.\"fraccio_inicial\"+(FT.\"radi_inic\"/"+cost_tram+"))<1 then (FT.\"fraccio_inicial\"+(FT.\"radi_inic\"/"+cost_tram+")) else 1 end)"
         sql_1+=") as geom, FT.\"punt_id\",FT.\"id_tram\",FT.\"fraccio\" "
-        sql_1+="from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
+        sql_1+=f"from \"fraccio_trams_raw\"FT inner join (select SX.\"geom\" as geom,SX.\"id\" as tram_xarxa from \"Xarxa_Graf_{Fitxer}\" SX, \"punts_interes_tmp\" PI where SX.\"id\"=PI.\"edge_id\") SXI on FT.\"id_tram\"=SXI.tram_xarxa where FT.\"fraccio\"=999) final"
         sql_1+=" where \"fraccio_trams_raw\".\"punt_id\"=final.\"punt_id\" and \"fraccio_trams_raw\".\"fraccio\"=999;\n"
             
         
@@ -1774,7 +1780,6 @@ class ZonesInfluenciaAdaptatives:
                       'INCLUDE_BOUNDS': 0,
                       'OUTPUT_LINES': 'memory:',
                       'OUTPUT': 'memory:'}
-        #linias_graf = processing.run('qgis:serviceareafromlayer', parameters)
         feedback = QgsProcessingFeedback()
         context = dataobjects.createContext(feedback)  
         # print(punts_lyr.featureCount())
@@ -2888,7 +2893,7 @@ class ZonesInfluenciaAdaptatives:
                         message = template.format(type(ex).__name__, ex.args)
                         print (message)
                         self.barraEstat_Error()
-                        QMessageBox.information(None, "Error", "Agregacio nou radi no feta " + str(i))
+                        QMessageBox.information(None, "Error", "Agregacio nou radi no feta iteracio" + str(i))
                         self.eliminaTaulesCalcul(Fitxer)
                         self.eliminaTaulesTemporals()
             
@@ -3005,7 +3010,35 @@ class ZonesInfluenciaAdaptatives:
             drop="DROP TABLE IF EXISTS \"EntitatBase\";"
             cur.execute(drop)
             conn.commit()
-            create = "CREATE TABLE \"EntitatBase\" as select \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"AgregacioSumaHabPostBucle_Temp\".\"geom\",\"radi\",\"available_places\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\" from \"AgregacioSumaHabPostBucle_Temp\" join \"ZI_Total_Combi_" + Fitxer +"\"  on ST_Intersects(ST_buffer(\"AgregacioSumaHabPostBucle_Temp\".\"geom\",80,5), \"ZI_Total_Combi_" + Fitxer +"\".\"geom\") group by \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"AgregacioSumaHabPostBucle_Temp\".\"geom\",\"radi\",\"available_places\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\";"
+            #create = "CREATE TABLE \"EntitatBase\" as select \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"AgregacioSumaHabPostBucle_Temp\".\"geom\",\"radi\",\"available_places\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\" from \"AgregacioSumaHabPostBucle_Temp\" join \"ZI_Total_Combi_" + Fitxer +"\"  on ST_Intersects(ST_buffer(\"AgregacioSumaHabPostBucle_Temp\".\"geom\",80,5), \"ZI_Total_Combi_" + Fitxer +"\".\"geom\") group by \"ZI_Total_Combi_" + Fitxer +"\".\"Suma_Habitants_Solapats\",\"ZI_Total_Combi_" + Fitxer +"\".\"habitantsreals\", \"id\", \"AgregacioSumaHabPostBucle_Temp\".\"geom\",\"radi\",\"available_places\", \"Cobertura\", \"AgregacioSumaHabPostBucle_Temp\".\"Habitants_Solapats\";"
+            # TODO: Mirar el DISTINCT ON amb el Josep
+            create = f"""
+            CREATE TABLE "EntitatBase" AS
+            SELECT DISTINCT ON ("id")
+                "ZI_Total_Combi_{Fitxer}"."Suma_Habitants_Solapats",
+                "ZI_Total_Combi_{Fitxer}"."habitantsreals",
+                "id",
+                "AgregacioSumaHabPostBucle_Temp"."geom",
+                "radi",
+                "available_places",
+                "Cobertura",
+                "AgregacioSumaHabPostBucle_Temp"."Habitants_Solapats"
+            FROM
+                "AgregacioSumaHabPostBucle_Temp"
+            JOIN
+                "ZI_Total_Combi_{Fitxer}"
+            ON
+                ST_Intersects(ST_Buffer("AgregacioSumaHabPostBucle_Temp"."geom",80,5), "ZI_Total_Combi_{Fitxer}"."geom")
+            GROUP BY
+                "ZI_Total_Combi_{Fitxer}"."Suma_Habitants_Solapats",
+                "ZI_Total_Combi_{Fitxer}"."habitantsreals",
+                "id",
+                "AgregacioSumaHabPostBucle_Temp"."geom",
+                "radi",
+                "available_places",
+                "Cobertura",
+                "AgregacioSumaHabPostBucle_Temp"."Habitants_Solapats";
+            """
             #print (create)
             cur.execute(create)
             conn.commit()
@@ -3204,7 +3237,7 @@ class ZonesInfluenciaAdaptatives:
         conn.commit()
         '''
         nomTaula = "\"EntitatPuntual_Temp_"+Fitxer+"\""
-        create = "create table \"TAULA_FINAL_" + Fitxer +"\" AS select " + nomTaula +".*,\"Suma_Habitants_Solapats\",\"habitantsreals\", \"radi\", \"Habitants_Solapats\", \"nrs\",\"AgregacioTotal_Temp\".\"the_geom\" AS \"the_geom\", \"Habitants\" FROM \"AgregacioTotal_Temp\" join " + nomTaula +" on (" + nomTaula +".\"id\" = \"AgregacioTotal_Temp\".\"id\") order by " + nomTaula +".\"id\";\n"
+        create = "create table \"TAULA_FINAL_" + Fitxer +"\" AS select " + nomTaula +".*,\"AgregacioTotal_Temp\".\"Suma_Habitants_Solapats\",\"AgregacioTotal_Temp\".\"habitantsreals\", \"AgregacioTotal_Temp\".\"radi\", \"AgregacioTotal_Temp\".\"Habitants_Solapats\", \"AgregacioTotal_Temp\".\"nrs\", \"AgregacioTotal_Temp\".\"the_geom\", \"AgregacioTotal_Temp\".\"Habitants\" FROM \"AgregacioTotal_Temp\" join " + nomTaula +" on (" + nomTaula +".\"id\" = \"AgregacioTotal_Temp\".\"id\") order by " + nomTaula +".\"id\";\n"
         create += "ALTER TABLE \"TAULA_FINAL_" + Fitxer +"\" DROP COLUMN IF EXISTS \"ID\";\n"
         create += "ALTER TABLE \"TAULA_FINAL_" + Fitxer +"\" DROP COLUMN IF EXISTS \"geom\";"
         try:
@@ -3667,12 +3700,10 @@ class ZonesInfluenciaAdaptatives:
         self.DropTempTable("ZI_Total_Combi_")
         self.DropTempTable("graf_utilitzat_")
         self.DropTempTable("JoinIlles_Habitants_Temp_")
-        #print('drop joinilles')
         self.DropTempTable("EntitatBase")
         self.DropTempTable("EntitatBase_NRS_")
         self.DropTempTable("buffer_final_")
         self.DropTempTable("JoinIlles_Habitants_Temp_")
-        #print('drop joinilles')
         self.DropTempTable("AgregacioSumaHab_Temp_")
         self.DropTempTable("AgrupacioRadiFix_Temp")
         self.DropTempTable("EntitatBase_NRS_")
@@ -3685,7 +3716,6 @@ class ZonesInfluenciaAdaptatives:
         self.DropTempTable("AgregacioSumaHabPostBucle_Temp")
         self.DropTempTable("parcel_temp")
         if versio_db == '1.0':
-            pass
             self.DropTempTable("zone")
             self.DropTempTable("address")
             self.DropTempTable("stretch")
