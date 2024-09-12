@@ -72,7 +72,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.240910"
+Versio_modul="V_Q3.240912"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -532,8 +532,8 @@ class ZonesInfluenciaAdaptatives:
                 return
             try:
                 cur.execute(f"""
-                            DROP TABLE IF EXISTS parcel_temp;
-                            CREATE TABLE parcel_temp (
+                            DROP TABLE IF EXISTS parcel_temp_{Fitxer};
+                            CREATE TABLE parcel_temp_{Fitxer} (
                                 id_parcel,
                                 geom,
                                 cadastral_reference
@@ -541,8 +541,8 @@ class ZonesInfluenciaAdaptatives:
                             """)
                 conn.commit()
                 cur.execute(f"""
-                            DROP TABLE IF EXISTS zone;
-                            CREATE TABLE zone (
+                            DROP TABLE IF EXISTS zone_{Fitxer};
+                            CREATE TABLE zone_{Fitxer} (
                                 id_zone,
                                 geom,
                                 cadastral_zoning_reference
@@ -550,8 +550,8 @@ class ZonesInfluenciaAdaptatives:
                             """)
                 conn.commit()
                 cur.execute(f"""
-                            DROP TABLE IF EXISTS address;
-                            CREATE TABLE address (
+                            DROP TABLE IF EXISTS address_{Fitxer};
+                            CREATE TABLE address_{Fitxer} (
                                 id_address,
                                 geom,
                                 cadastral_reference,
@@ -561,8 +561,8 @@ class ZonesInfluenciaAdaptatives:
                 conn.commit()
                 if self.dlg.CB_tramsUtils.isChecked():
                     cur.execute(f"""
-                                DROP TABLE IF EXISTS stretch;
-                                CREATE TABLE stretch (
+                                DROP TABLE IF EXISTS stretch_{Fitxer};
+                                CREATE TABLE stretch_{Fitxer} (
                                     id,
                                     cost,
                                     reverse_cost,
@@ -579,7 +579,7 @@ class ZonesInfluenciaAdaptatives:
                                 ) AS SELECT "id", "cost", "reverse_cost", "Nombre_Semafors", "Cost_Total_Semafor_Tram", "the_geom", "source", "target", "LENGTH", "SENTIT"::INTEGER, "PENDENT_ABS", "VELOCITAT_PS", "VELOCITAT_PS_INV" FROM "{self.dlg.comboGraf.currentText()}";
                                 """)
                     conn.commit()
-                    cur.execute(f"""SELECT pgr_createTopology('stretch', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
+                    cur.execute(f"""SELECT pgr_createTopology('stretch_{Fitxer}', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
                     conn.commit()
             except Exception as ex:
                 self.dlg.setEnabled(True)
@@ -592,13 +592,47 @@ class ZonesInfluenciaAdaptatives:
                 return
         else:
             try:
-                sql = "DROP TABLE IF EXISTS parcel_temp;\n"
-                sql += "CREATE TABLE parcel_temp AS SELECT * FROM parcel;"
+                sql = f"DROP TABLE IF EXISTS parcel_temp_{Fitxer};\n"
+                sql += f"CREATE TABLE parcel_temp_{Fitxer} AS SELECT * FROM parcel;"
                 cur.execute(sql)
                 conn.commit()
             except:
                 print("Error al crear la taula temporal")
                 QMessageBox.information(None, "Error", "Error al crear la taula temporal")
+                return
+            try:
+                sql = f"DROP TABLE IF EXISTS zone_{Fitxer};\n"
+                sql += f"CREATE TABLE zone_{Fitxer} AS SELECT * FROM zone;"
+                cur.execute(sql)
+                conn.commit()
+            except:
+                print("Error al crear la taula temporal")
+                QMessageBox.information(None, "Error", "Error al crear la taula temporal")
+                return
+            try:
+                sql = f"DROP TABLE IF EXISTS address_{Fitxer};\n"
+                sql += f"CREATE TABLE address_{Fitxer} AS SELECT * FROM address;"
+                cur.execute(sql)
+                conn.commit()
+            except:
+                print("Error al crear la taula temporal")
+                QMessageBox.information(None, "Error", "Error al crear la taula temporal")
+                return
+            try:
+                sql = f"DROP TABLE IF EXISTS stretch_{Fitxer};\n"
+                sql += f"CREATE TABLE stretch_{Fitxer} AS SELECT * FROM stretch;"
+                cur.execute(sql)
+                conn.commit()
+            except:
+                print("Error al crear la taula temporal")
+                QMessageBox.information(None, "Error", "Error al crear la taula temporal")
+                return
+            try:
+                cur.execute(f"""SELECT pgr_createTopology('stretch_{Fitxer}', 0.0001, 'geom', 'id', 'source', 'target', clean:='true');""")
+                conn.commit()
+            except:
+                print("Error al crear la topologia")
+                QMessageBox.information(None, "Error", "Error al crear la topologia")
                 return
 
     def on_Change_ComboGraf(self, state):
@@ -718,7 +752,10 @@ class ZonesInfluenciaAdaptatives:
         """Aquesta funció comprova si la taula que li hem passat té la seva capa de graf corresponent"""
         global cur
         global conn
-        sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
+        if taula != 'stretch':
+            sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + "_vertices_pgr')"
+        else:
+            sql = "select exists (select 1 from geometry_columns where f_table_name = '" + taula + f"_{Fitxer}_vertices_pgr')"
         cur.execute(sql)
         camp = cur.fetchall()
         return camp[0][0]
@@ -970,7 +1007,7 @@ class ZonesInfluenciaAdaptatives:
 #       *****************************************************************************************************************
 #       INICI CREACIO DE LA TAULA 'XARXA_GRAF' I PREPARACIO DELS CAMPS COST I REVERSE_COST
 #       *****************************************************************************************************************
-        XarxaCarrers = 'stretch'
+        XarxaCarrers = f'stretch_{Fitxer}'
         sql_1=f"DROP TABLE IF EXISTS \"Xarxa_Graf_{Fitxer}\";\n"
         """ Es fa una copia de la taula que conté el graf i s'afegeixen els camps cost i reverse_cost en funció del que es necessiti, es crearà taula local temporal per evitar problemes de concurrencia"""
         sql_1+=f"""CREATE LOCAL TEMP TABLE \"Xarxa_Graf_{Fitxer}\" AS (SELECT * FROM "{XarxaCarrers}");\n"""
@@ -2119,11 +2156,11 @@ class ZonesInfluenciaAdaptatives:
                     if layer.name() == self.dlg.comboLeyenda.currentText():
                         try:
                             if (self.dlg.bt_ILLES.isChecked()):
-                                sql_SRID="SELECT Find_SRID('public', 'zone', 'geom')"
+                                sql_SRID=f"SELECT Find_SRID('public', 'zone_{Fitxer}', 'geom')"
                             if (self.dlg.bt_Parcel.isChecked()):
                                 sql_SRID="SELECT Find_SRID('public', 'parcel', 'geom')"
                             if (self.dlg.bt_Portals.isChecked()):
-                                sql_SRID="SELECT Find_SRID('public', 'address', 'geom')"
+                                sql_SRID=f"SELECT Find_SRID('public', 'address_{Fitxer}', 'geom')"
                             cur.execute(sql_SRID)
                         except Exception as ex:
                             self.dlg.setEnabled(True)
@@ -2440,7 +2477,7 @@ class ZonesInfluenciaAdaptatives:
         taula = ""
         
         try:      
-            create = "create table \"JoinIlles_Habitants_Temp_"+ Fitxer + "\" AS select \"id_zone\", \"cadastral_zoning_reference\", \"Habitants\", \"geom\" from \"Illes_Resum\", \"zone\" where \"ILLES_Codificades\" = \"cadastral_zoning_reference\";"
+            create = "create table \"JoinIlles_Habitants_Temp_"+ Fitxer + f"\" AS select \"id_zone\", \"cadastral_zoning_reference\", \"Habitants\", \"geom\" from \"Illes_Resum\", \"zone_{Fitxer}\" where \"ILLES_Codificades\" = \"cadastral_zoning_reference\";"
             cur.execute(create)
             taula = "\"JoinIlles_Habitants_Temp_"+ Fitxer + "\""
             conn.commit()
@@ -2463,7 +2500,7 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(drop)
                 conn.commit()
                 #select "Parcela","geom", "Habitants"  from "ResumParcela", "parcel" where "Parcela" = "UTM";
-                create = "create local temp table \"JoinParcel_Habitants_Temp\" AS select \"id_parcel\",\"Parcela\",\"geom\", \"Habitants\" from \"Parcel_Resum\", \"parcel_temp\" where \"Parcela\" = \"cadastral_reference\";"
+                create = f"create local temp table \"JoinParcel_Habitants_Temp\" AS select \"id_parcel\",\"Parcela\",\"geom\", \"Habitants\" from \"Parcel_Resum\", \"parcel_temp_{Fitxer}\" where \"Parcela\" = \"cadastral_reference\";"
                 cur.execute(create)
                 taula = "\"JoinParcel_Habitants_Temp\""
                 conn.commit()
@@ -2487,7 +2524,7 @@ class ZonesInfluenciaAdaptatives:
                 cur.execute(drop)
                 conn.commit()
                 #select * from "ResumNPolicia", "dintreilla" where "NPolicia" = "Carrer_Num_Bis";
-                create = "create local temp table \"JoinNPol_Habitants_Temp\" AS select \"id_address\",\"NPolicia\",\"geom\", \"Habitants\" from \"NPolicia_Resum\", \"address\" where \"NPolicia\" = \"designator\";"
+                create = f"create local temp table \"JoinNPol_Habitants_Temp\" AS select \"id_address\",\"NPolicia\",\"geom\", \"Habitants\" from \"NPolicia_Resum\", \"address_{Fitxer}\" where \"NPolicia\" = \"designator\";"
                 cur.execute(create)
                 taula = "\"JoinNPol_Habitants_Temp\""
                 conn.commit()
@@ -2556,7 +2593,7 @@ class ZonesInfluenciaAdaptatives:
                         self.eliminaTaulesTemporals()
             
                         return
-                    sql_xarxa="SELECT * FROM \"stretch\""
+                    sql_xarxa=f"SELECT * FROM \"stretch_{Fitxer}\""
                     buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(radi[0]))#self.dlg.txt_radi.text()
                     vlayer=buffer_resultat
                     vlayer_graf=graf_resultat
@@ -2695,7 +2732,7 @@ class ZonesInfluenciaAdaptatives:
                             selectNouRadi = "SELECT DISTINCT \"nouradi\" FROM \"AgregacioSumaHab_Temp_"+Fitxer+"\""
                             cur.execute(selectNouRadi)
                             nouRadi = cur.fetchone()
-                            sql_xarxa="SELECT * FROM \"stretch\""
+                            sql_xarxa=f"SELECT * FROM \"stretch_{Fitxer}\""
 
                             buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))
                             vlayer=buffer_resultat
@@ -2829,7 +2866,7 @@ class ZonesInfluenciaAdaptatives:
                             selectNouRadi = "SELECT DISTINCT \"nouradi\" FROM \"AgregacioSumaHab_Temp_"+Fitxer+"\""
                             cur.execute(selectNouRadi)
                             nouRadi = cur.fetchone()
-                            sql_xarxa="SELECT * FROM \"stretch\""                     
+                            sql_xarxa=f"SELECT * FROM \"stretch_{Fitxer}\""                     
 
                             buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nouRadi[0]))
                             
@@ -3112,7 +3149,7 @@ class ZonesInfluenciaAdaptatives:
                     selectNrs = "SELECT DISTINCT NRS FROM \"EntitatBase_NRS_"+Fitxer+"\""
                     cur.execute(selectNrs)
                     nrs = cur.fetchone()
-                    sql_xarxa="SELECT * FROM \"stretch\""                  
+                    sql_xarxa=f"SELECT * FROM \"stretch_{Fitxer}\""                  
                     buffer_resultat,graf_resultat=self.calcul_graf2(sql_total,sql_xarxa,uri,float(nrs[0]))#self.dlg.txt_radi.text()
                     vlayer=buffer_resultat
                     vlayer_graf=graf_resultat
@@ -3652,16 +3689,12 @@ class ZonesInfluenciaAdaptatives:
         '''
         Aquesta funció s'encarrega d'eliminar les taules utilitzades durant el càlcul
         '''
-        if versio_db == '1.0':
-            drop=""     
-            drop += "DROP TABLE IF EXISTS parcel_temp;\n"
-            drop += "DROP TABLE IF EXISTS zone;\n"
-            drop += "DROP TABLE IF EXISTS address;\n"
-            drop += "DROP TABLE IF EXISTS stretch;\n"
-            drop += "DROP TABLE IF EXISTS stretch_vertices_pgr;\n"
-        else:
-            drop="DROP TABLE IF EXISTS parcel_temp;"
-        
+        drop=""     
+        drop += f"DROP TABLE IF EXISTS parcel_temp_{Fitxer};\n"
+        drop += f"DROP TABLE IF EXISTS zone_{Fitxer};\n"
+        drop += f"DROP TABLE IF EXISTS address_{Fitxer};\n"
+        drop += f"DROP TABLE IF EXISTS stretch_{Fitxer};\n"
+        drop += f"DROP TABLE IF EXISTS stretch_{Fitxer}_vertices_pgr;\n"
         try:
             cur.execute(drop)
             conn.commit()
@@ -3714,15 +3747,6 @@ class ZonesInfluenciaAdaptatives:
         self.DropTempTable("AgregacioNouRadi_Temp")
         self.DropTempTable("AgregacioTotal_Temp")
         self.DropTempTable("AgregacioSumaHabPostBucle_Temp")
-        self.DropTempTable("parcel_temp")
-        if versio_db == '1.0':
-            self.DropTempTable("zone")
-            self.DropTempTable("address")
-            self.DropTempTable("stretch")
-            self.DropTempTable("stretch_vertices_pgr")
-        
-        
-        
 
     def DropTempTable(self,taula):
         '''
@@ -3843,7 +3867,7 @@ class PointTool(QgsMapTool):
             premuto=False
             linea=False
             actual_crs = self.canvas.mapSettings().destinationCrs()
-            crsDest = QgsCoordinateReferenceSystem(4326)  # WGS 84 / UTM zone 33N
+            crsDest = QgsCoordinateReferenceSystem(4326)  # WGS 84 / UTM zone_{Fitxer} 33N
             xform = QgsCoordinateTransform(actual_crs, crsDest,QgsProject.instance())
             pt1 = xform.transform(point0)
             #print('https://www.google.com/maps/@?api=1&map_action=pano&pano=tu510ie_z4ptBZYo2BGEJg&viewpoint='+str(pt1.y())+','+str(pt1.x())+'&heading='+str(int(angle)) +'&pitch=10&fov=250')
