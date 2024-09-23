@@ -72,7 +72,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.240912"
+Versio_modul="V_Q3.240923"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -141,6 +141,8 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.CB_tramsUtils.stateChanged.connect(self.on_click_CB_tramsUtils)
         self.dlg.Esborra_temp.clicked.connect(self.on_click_Esborra_temporals)
         self.dlg.bt_ReloadLeyenda.clicked.connect(self.cerca_elements_Leyenda)
+
+        self.dlg.rejected.connect(self.on_click_Sortir)
         # Create the dialog (after translation) and keep reference
 
         self.actions = []
@@ -316,6 +318,9 @@ class ZonesInfluenciaAdaptatives:
         Tanca la finestra del plugin 
         '''
         self.EstatInicial()
+        self.eliminaTaulesCalcul(Fitxer)
+        self.eliminaTaulesTemporals()
+        self.DropTemporalTables()
         self.dlg.close()
         
     def on_click_CB_tramsUtils(self, state):
@@ -2103,7 +2108,7 @@ class ZonesInfluenciaAdaptatives:
         global versio_db
         
         self.dlg.setEnabled(False)
-        Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        
         consoleWidget = iface.mainWindow().findChild( QDockWidget, 'PythonConsole' )
         if consoleWidget is None:
             iface.actionShowPythonDialog().trigger()
@@ -3798,11 +3803,12 @@ class ZonesInfluenciaAdaptatives:
         self.dlg.lblEstatConn.setText('Connectat')
 
     def run(self):
+        global Fitxer
         """Run method that performs all the real work"""
         self.EstatInicial()
         self.dlg.show()
         conn=self.getConnections()
-        # Run the dialog event loop
+        Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         # Run the dialog event loop
         self.populateComboBox(self.dlg.comboConnexio ,conn,'Selecciona connexió',True)
         result = self.dlg.exec_()
