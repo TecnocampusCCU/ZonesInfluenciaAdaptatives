@@ -3808,7 +3808,7 @@ class ZonesInfluenciaAdaptatives:
         self.EstatInicial()
         self.dlg.show()
         conn=self.getConnections()
-        Fitxer=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        Fitxer="_ccu_temp"+datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         # Run the dialog event loop
         self.populateComboBox(self.dlg.comboConnexio ,conn,'Selecciona connexió',True)
         result = self.dlg.exec_()
