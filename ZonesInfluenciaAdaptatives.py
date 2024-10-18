@@ -72,7 +72,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.240923"
+Versio_modul="V_Q3.241018"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -3808,7 +3808,7 @@ class ZonesInfluenciaAdaptatives:
         self.EstatInicial()
         self.dlg.show()
         conn=self.getConnections()
-        Fitxer="_ccu_temp"+datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
+        Fitxer="ccu_temp"+datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
         # Run the dialog event loop
         self.populateComboBox(self.dlg.comboConnexio ,conn,'Selecciona connexió',True)
         result = self.dlg.exec_()
