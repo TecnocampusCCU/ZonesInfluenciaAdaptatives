@@ -27,7 +27,7 @@ from PyQt5.QtCore import *
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QAction,QMessageBox,QApplication,QSizePolicy,QGridLayout,QDialogButtonBox,QFileDialog,QDockWidget,QProgressBar,QColorDialog,QToolBar
-from qgis.core import QgsMapLayer, QgsDataSourceUri, QgsVectorLayer, QgsVectorFileWriter, QgsGraduatedSymbolRenderer, QgsGradientColorRamp, QgsProject, QgsFillSymbol, QgsRendererRangeLabelFormat, QgsLayerTreeLayer, QgsRenderContext, QgsProcessingFeedback, Qgis, QgsVectorLayerExporter, QgsWkbTypes, QgsUnitTypes, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsGeometryUtils, QgsPointXY, QgsField, QgsProcessingException
+from qgis.core import QgsMapLayer, QgsDataSourceUri, QgsVectorLayer, QgsVectorFileWriter, QgsGraduatedSymbolRenderer, QgsClassificationQuantile, QgsGradientColorRamp, QgsProject, QgsFillSymbol, QgsRendererRangeLabelFormat, QgsLayerTreeLayer, QgsRenderContext, QgsProcessingFeedback, Qgis, QgsVectorLayerExporter, QgsWkbTypes, QgsUnitTypes, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsGeometryUtils, QgsPointXY, QgsField, QgsProcessingException
 from qgis.PyQt.QtCore import QVariant, QCoreApplication
 from qgis.analysis import QgsVectorLayerDirector
 from qgis.analysis import QgsNetworkDistanceStrategy
@@ -38,8 +38,8 @@ from qgis.gui import QgsMessageBar
 import psycopg2
 import datetime
 import time
-import processing
-from processing.tools import dataobjects
+import processing # type: ignore
+from processing.tools import dataobjects # type: ignore
 from qgis.utils import iface
 from PyQt5.QtSql import *
 import qgis.utils
@@ -72,7 +72,7 @@ PART DE STREET VIEW
 Variables globals per a la connexio
 i per guardar el color dels botons
 """
-Versio_modul="V_Q3.241018"
+Versio_modul="V_Q3.250218"
 micolorArea = None
 micolor = None
 nomBD1=""
@@ -2700,7 +2700,7 @@ class ZonesInfluenciaAdaptatives:
         
                     return
                     
-                progress.setValue(progress.value()+pas_barra_iteracions)
+                progress.setValue(int(progress.value()+pas_barra_iteracions))
                 QApplication.processEvents()
 
                 if self.dlg.CB_tramsUtils.isChecked():
@@ -2713,7 +2713,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(drop)
                         conn.commit()
                         sql_total="SELECT * FROM \"AgregacioSumaHab_Temp_"+Fitxer+"\""
-                        progress.setValue(progress.value()+pas_barra_iteracions)
+                        progress.setValue(int(progress.value()+pas_barra_iteracions))
                         QApplication.processEvents()
                         if (self.dlg.chk_calc_local.isChecked()):
                             uri = QgsDataSourceUri()    
@@ -2783,7 +2783,7 @@ class ZonesInfluenciaAdaptatives:
                         return
                         
                         
-                    progress.setValue(progress.value()+pas_barra_iteracions)
+                    progress.setValue(int(progress.value()+pas_barra_iteracions))
                     QApplication.processEvents()
                 else: 
                     try:
@@ -2820,7 +2820,7 @@ class ZonesInfluenciaAdaptatives:
                     #print (create)
                     cur.execute(create)
                     conn.commit() 
-                    progress.setValue(progress.value()+pas_barra_iteracions)
+                    progress.setValue(int(progress.value()+pas_barra_iteracions))
                     QApplication.processEvents()
                 except Exception as ex:
                     self.dlg.setEnabled(True)
@@ -2846,7 +2846,7 @@ class ZonesInfluenciaAdaptatives:
                         cur.execute(drop)
                         conn.commit()
                         sql_total="SELECT * FROM \"AgregacioSumaHab_Temp_"+Fitxer+"\""
-                        progress.setValue(progress.value()+pas_barra_iteracions)
+                        progress.setValue(int(progress.value()+pas_barra_iteracions))
                         QApplication.processEvents()
                         if (self.dlg.chk_calc_local.isChecked()):
                             uri = QgsDataSourceUri()    
@@ -2917,7 +2917,7 @@ class ZonesInfluenciaAdaptatives:
             
                         return
                         
-                    progress.setValue(progress.value()+pas_barra_iteracions)
+                    progress.setValue(int(progress.value()+pas_barra_iteracions))
                     QApplication.processEvents()
                 else:
                     try:
@@ -3334,7 +3334,13 @@ class ZonesInfluenciaAdaptatives:
         if vlayer.isValid():
             Cobertura=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
             """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
+            if (qgis.utils.Qgis.QGIS_VERSION_INT>=32000):
+                save_options = QgsVectorFileWriter.SaveVectorOptions()
+                save_options.driverName = "ESRI Shapefile"
+                save_options.fileEncoding = "UTF-8"
+                transform_context = QgsProject.instance().transformContext()
+                error=QgsVectorFileWriter.writeAsVectorFormatV3(vlayer, TEMPORARY_PATH+"/Cobertura_"+Cobertura+".shp",transform_context,save_options)
+            elif (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                 save_options = QgsVectorFileWriter.SaveVectorOptions()
                 save_options.driverName = "ESRI Shapefile"
                 save_options.fileEncoding = "UTF-8"
@@ -3465,7 +3471,13 @@ class ZonesInfluenciaAdaptatives:
             if vlayer.isValid():
                 Tematic=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
                 """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-                if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
+                if (qgis.utils.Qgis.QGIS_VERSION_INT>=32000):
+                    save_options = QgsVectorFileWriter.SaveVectorOptions()
+                    save_options.driverName = "ESRI Shapefile"
+                    save_options.fileEncoding = "UTF-8"
+                    transform_context = QgsProject.instance().transformContext()
+                    error=QgsVectorFileWriter.writeAsVectorFormatV3(vlayer, TEMPORARY_PATH+"/Tematic_"+Cobertura+".shp",transform_context,save_options)
+                elif (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                     save_options = QgsVectorFileWriter.SaveVectorOptions()
                     save_options.driverName = "ESRI Shapefile"
                     save_options.fileEncoding = "UTF-8"
@@ -3486,11 +3498,17 @@ class ZonesInfluenciaAdaptatives:
                 format = QgsRendererRangeLabelFormat()
                 template = "%1 a %2 habitants"
                 precision = 0
-                format.setFormat(template)
-                format.setPrecision(precision)
-                format.setTrimTrailingZeroes(True)
-                renderer=QgsGraduatedSymbolRenderer.createRenderer(vlayer,fieldname,numberOfClasses,QgsGraduatedSymbolRenderer.Quantile,mysymbol,colorRamp)
-                renderer.setLabelFormat(format,True)
+
+                renderer = QgsGraduatedSymbolRenderer()
+                renderer.setClassAttribute(fieldname)
+                renderer.setSourceSymbol(mysymbol)
+                renderer.setSourceColorRamp(colorRamp)
+                classification_method = QgsClassificationQuantile()
+                classification_method.setLabelFormat(template)
+                classification_method.setLabelPrecision(precision)
+                classification_method.setLabelTrimTrailingZeroes(True)
+                renderer.setClassificationMethod(classification_method)
+                renderer.updateClasses(vlayer, numberOfClasses)
                 vlayer.setRenderer(renderer)
                 
                 QgsProject.instance().addMapLayer(vlayer,False)
@@ -3529,7 +3547,13 @@ class ZonesInfluenciaAdaptatives:
             if vlayer.isValid():
                 Graf=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
                 """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-                if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
+                if (qgis.utils.Qgis.QGIS_VERSION_INT>=32000):
+                    save_options = QgsVectorFileWriter.SaveVectorOptions()
+                    save_options.driverName = "ESRI Shapefile"
+                    save_options.fileEncoding = "UTF-8"
+                    transform_context = QgsProject.instance().transformContext()
+                    error=QgsVectorFileWriter.writeAsVectorFormatV3(vlayer, TEMPORARY_PATH+"/Graf_"+Graf+".shp",transform_context,save_options)
+                elif (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                     save_options = QgsVectorFileWriter.SaveVectorOptions()
                     save_options.driverName = "ESRI Shapefile"
                     save_options.fileEncoding = "UTF-8"
@@ -3605,7 +3629,13 @@ class ZonesInfluenciaAdaptatives:
         if vlayer.isValid():
             Cobertura=datetime.datetime.now().strftime("%Y%m%d%H%M%S%f")
             """Es crea un Shape a la carpeta temporal amb la data i hora actual"""
-            if (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
+            if (qgis.utils.Qgis.QGIS_VERSION_INT>=32000):
+                save_options = QgsVectorFileWriter.SaveVectorOptions()
+                save_options.driverName = "ESRI Shapefile"
+                save_options.fileEncoding = "UTF-8"
+                transform_context = QgsProject.instance().transformContext()
+                error=QgsVectorFileWriter.writeAsVectorFormatV3(vlayer, TEMPORARY_PATH+"/EntitatPuntual_"+Cobertura+".shp",transform_context,save_options)
+            elif (qgis.utils.Qgis.QGIS_VERSION_INT>=31004):
                 save_options = QgsVectorFileWriter.SaveVectorOptions()
                 save_options.driverName = "ESRI Shapefile"
                 save_options.fileEncoding = "UTF-8"
